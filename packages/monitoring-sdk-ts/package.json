@@ -1,0 +1,11 @@
+{
+  "name": "@wolfie/monitoring-sdk",
+  "version": "0.1.0",
+  "description": "Ask Wolfie Control Center — pipeline instrumentation SDK (Node.js/TypeScript)",
+  "type": "module",
+  "main": "./index.mjs",
+  "types": "./index.d.ts",
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  }
+}

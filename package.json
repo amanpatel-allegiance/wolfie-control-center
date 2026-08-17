@@ -1,0 +1,42 @@
+{
+  "name": "wolfie-control-center",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ask Wolfie — Data Pipeline Monitoring & Refresh Control Center",
+  "scripts": {
+    "dev": "next dev -p 2085",
+    "build": "next build",
+    "start": "next start -p 2085",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "seed:dev": "tsx scripts/seed-dev-scenarios.ts",
+    "alerts:tick": "tsx scripts/tick-alerts.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.446.0",
+    "next": "15.0.3",
+    "react": "19.0.0-rc-66855b96-20241106",
+    "react-dom": "19.0.0-rc-66855b96-20241106",
+    "recharts": "^2.13.0",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.12.0",
+    "eslint-config-next": "15.0.3",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.2"
+  }
+}

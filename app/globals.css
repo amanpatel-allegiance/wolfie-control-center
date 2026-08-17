@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: theme("colors.wolfie.bg");
+  color: theme("colors.wolfie.ink");
+  font-family: theme("fontFamily.sans");
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  background-image: radial-gradient(circle at 82% -10%, rgba(79, 70, 229, .055), transparent 30rem);
+}
+
+::selection { background: rgba(99, 91, 255, .18); color: #172036; }
+*:focus-visible { outline: 3px solid rgba(99, 91, 255, .22); outline-offset: 2px; }
+
+@layer components {
+  .surface { @apply rounded-xl border border-wolfie-border bg-wolfie-panel shadow-card; }
+  .eyebrow { @apply text-2xs font-semibold uppercase tracking-[0.14em] text-wolfie-muted; }
+  .page-title { @apply text-2xl font-semibold tracking-[-0.025em] text-wolfie-ink sm:text-3xl; }
+  .page-copy { @apply mt-1 max-w-2xl text-sm leading-6 text-wolfie-muted; }
+  .control { @apply h-10 rounded-xl border border-wolfie-border bg-white px-3 text-sm text-wolfie-ink shadow-sm transition hover:border-wolfie-muted/50 focus:border-wolfie-accent focus:outline-none focus:ring-4 focus:ring-wolfie-accent/10; }
+  .primary-button { @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-wolfie-accent px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA] hover:shadow-md active:translate-y-px disabled:pointer-events-none disabled:opacity-50; }
+  .secondary-button { @apply inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-wolfie-border bg-white px-4 text-sm font-semibold text-wolfie-ink shadow-sm transition hover:border-wolfie-muted/40 hover:bg-wolfie-soft active:translate-y-px; }
+  .table-shell { @apply overflow-hidden rounded-xl border border-wolfie-border bg-wolfie-panel shadow-card; }
+  .data-table { @apply w-full min-w-[720px] text-sm; }
+  .data-table thead { @apply border-b border-wolfie-border bg-[#FAFBFC] text-2xs font-semibold uppercase tracking-[0.1em] text-wolfie-muted; }
+  .data-table th { @apply px-5 py-3.5; }
+  .data-table tbody { @apply divide-y divide-wolfie-border/80; }
+  .data-table tbody tr { @apply transition-colors hover:bg-wolfie-soft; }
+  .data-table td { @apply px-5 py-3.5; }
+}
+
+/* subtle tabular numbers for metric cards + timings */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* skeleton shimmer */
+@keyframes shimmer { 0% { background-position: -400px 0 } 100% { background-position: 400px 0 } }
+.skeleton {
+  background: linear-gradient(90deg, #EEE 0%, #F7F7F7 50%, #EEE 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.2s infinite linear;
+  border-radius: 6px;
+}
+
+@keyframes fade-up { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: translateY(0) } }
+.animate-in { animation: fade-up .35s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
