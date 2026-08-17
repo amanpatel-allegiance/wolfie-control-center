@@ -8,6 +8,7 @@ const nextConfig = {
   reactStrictMode: true,
   typedRoutes: false,
   outputFileTracingRoot: projectRoot,
+  devIndicators: false,
   eslint: { ignoreDuringBuilds: false },
   typescript: { ignoreBuildErrors: false },
 };

@@ -16,7 +16,7 @@ export async function updateSession(request: NextRequest) {
       },
     },
   });
-  // Refresh session
-  await supabase.auth.getUser();
-  return response;
+  // Validate and refresh the session before protected routes render.
+  const { data } = await supabase.auth.getUser();
+  return { response, user: data.user };
 }
