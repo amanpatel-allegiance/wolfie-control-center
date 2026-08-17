@@ -19,7 +19,7 @@ export function PipelineTable({ rows }: { rows: PipelineHealthRow[] }) {
       <table className="data-table min-w-[1100px]">
         <thead>
           <tr>
-            <th className="text-left">Pipeline</th><th className="text-left">Source</th><th className="text-left">Health</th><th className="text-left">Latest run</th><th className="text-left">Freshness</th><th className="text-left">Schedule</th><th className="text-left">Scheduler</th>
+            <th className="text-left">Pipeline</th><th className="text-left">Source</th><th className="text-left">Health</th><th className="text-left">Latest run</th><th className="text-left">Freshness / SLA</th><th className="text-left">Schedule</th><th className="text-left">Runtime target</th>
           </tr>
         </thead>
         <tbody>
@@ -52,9 +52,9 @@ export function PipelineTable({ rows }: { rows: PipelineHealthRow[] }) {
                 <div>{r.schedule_timezone}</div>
               </td>
               <td className="text-2xs text-wolfie-muted">
-                {r.scheduler}
+                {formatDuration(r.expected_duration_s)}
                 {r.expected_duration_s && (
-                  <div>~ {formatDuration(r.expected_duration_s)}</div>
+                  <div>via {r.scheduler}</div>
                 )}
               </td>
             </tr>

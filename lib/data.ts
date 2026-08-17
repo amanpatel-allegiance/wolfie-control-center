@@ -1,12 +1,16 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import type {
   AlertEvent,
+  AlertRule,
   DailyStats,
   DataSource,
+  DatasetSnapshot,
+  ManualRunAudit,
   OverviewKpis,
   Pipeline,
   PipelineHealthRow,
   Run,
+  ScheduleAudit,
   StageRow,
 } from "@/lib/types";
 
@@ -133,7 +137,7 @@ export async function getPipelines(): Promise<Pipeline[]> {
   const { data, error } = await sb
     .from("wcc_pipelines")
     .select(
-      "id, key, name, description, source_id, repository, scheduler, schedule_expression, schedule_timezone, refresh_strategy, freshness_sla_hours, expected_duration_s, timeout_s, destination_tables, enabled",
+      "id, key, name, description, source_id, repository, environment, pipeline_type, scheduler, schedule_expression, schedule_timezone, refresh_strategy, freshness_sla_hours, expected_duration_s, timeout_s, max_retries, concurrency, destination_tables, enabled, metadata",
     )
     .order("key");
   if (error) throw new Error(error.message);
@@ -147,15 +151,27 @@ export async function getPipelines(): Promise<Pipeline[]> {
 }
 
 export async function getAlerts(status: string = "open"): Promise<AlertEvent[]> {
+  return getAlertEvents(status);
+}
+
+export async function getAlertEvents(status?: string): Promise<AlertEvent[]> {
   const sb = await supabaseServer();
-  const { data, error } = await sb
+  let query = sb
     .from("wcc_pipeline_alert_events")
     .select("*")
-    .eq("status", status)
     .order("fired_at", { ascending: false })
     .limit(200);
+  if (status) query = query.eq("status", status);
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []) as AlertEvent[];
+}
+
+export async function getAlertRules(): Promise<AlertRule[]> {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.from("wcc_pipeline_alert_rules").select("*").order("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []) as AlertRule[];
 }
 
 export async function getDailyStats(pipelineId: number, days = 30): Promise<DailyStats[]> {
@@ -183,7 +199,7 @@ export async function getWorkspaceDailyStats(days = 30): Promise<DailyStats[]> {
   return (data ?? []).map((row) => normalizeDailyStats(row));
 }
 
-export async function getDatasetSnapshots(pipelineId: number, limit = 10) {
+export async function getDatasetSnapshots(pipelineId: number, limit = 10): Promise<DatasetSnapshot[]> {
   const sb = await supabaseServer();
   const { data, error } = await sb
     .from("wcc_dataset_snapshots")
@@ -192,7 +208,28 @@ export async function getDatasetSnapshots(pipelineId: number, limit = 10) {
     .order("snapshot_at", { ascending: false })
     .limit(limit);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  return (data ?? []) as DatasetSnapshot[];
+}
+
+export async function getAllDatasetSnapshots(limit = 500): Promise<DatasetSnapshot[]> {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.from("wcc_dataset_snapshots").select("*").order("snapshot_at", { ascending: false }).limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as DatasetSnapshot[];
+}
+
+export async function getPipelineManualRuns(pipelineId: number, limit = 50): Promise<ManualRunAudit[]> {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.from("wcc_pipeline_manual_runs").select("*").eq("pipeline_id", pipelineId).order("requested_at", { ascending: false }).limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ManualRunAudit[];
+}
+
+export async function getPipelineScheduleAudit(pipelineId: number, limit = 50): Promise<ScheduleAudit[]> {
+  const sb = await supabaseServer();
+  const { data, error } = await sb.from("wcc_pipeline_schedule_audit").select("*").eq("pipeline_id", pipelineId).order("created_at", { ascending: false }).limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as ScheduleAudit[];
 }
 
 export async function getCurrentRole(): Promise<"viewer" | "operator" | "admin"> {

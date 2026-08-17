@@ -3,6 +3,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 
 export async function POST(request: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
+  const alertId = Number(id);
+  if (!Number.isSafeInteger(alertId) || alertId <= 0) return NextResponse.json({ ok: false, message: "invalid alert" }, { status: 400 });
   const sb = await supabaseServer();
   const { data: userRes } = await sb.auth.getUser();
   const user = userRes.user;
@@ -14,7 +16,9 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
   const { error } = await sb
     .from("wcc_pipeline_alert_events")
     .update({ status: "acknowledged", acknowledged_at: new Date().toISOString(), acknowledged_by: user.id })
-    .eq("id", Number(id));
-  if (error) return NextResponse.json({ ok: false, message: error.message }, { status: 500 });
+    .eq("id", alertId)
+    .eq("status", "open");
+  if (error) return NextResponse.json({ ok: false, message: "acknowledgement failed" }, { status: 500 });
+  if (request.headers.get("accept")?.includes("application/json")) return NextResponse.json({ ok: true });
   return NextResponse.redirect(new URL("/alerts", request.url), { status: 303 });
 }

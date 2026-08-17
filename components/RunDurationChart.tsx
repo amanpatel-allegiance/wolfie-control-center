@@ -28,14 +28,14 @@ export function RunDurationChart({ data }: { data: Day[] }) {
             <YAxis yAxisId="runs" fontSize={10} allowDecimals={false} axisLine={false} tickLine={false} width={32} />
             <YAxis yAxisId="duration" orientation="right" fontSize={10} axisLine={false} tickLine={false} width={44} tickFormatter={(value) => formatDuration(value)} />
             <Tooltip
-              cursor={{ fill: "rgba(79,70,229,.035)" }}
+              cursor={{ fill: "rgba(15,159,110,.04)" }}
               contentStyle={{ fontSize: 11, borderRadius: 10, border: "1px solid #E3E7ED", padding: "8px 10px", boxShadow: "0 12px 32px rgba(16,24,40,.10)" }}
               formatter={(value: number, name: string) => [name === "avg_duration_s" ? formatDuration(value) : value, name === "avg_duration_s" ? "Avg runtime" : name]}
             />
             <Bar isAnimationActive={false} yAxisId="runs" dataKey="succeeded" stackId="a" fill="#12A878" barSize={14} radius={[0, 0, 2, 2]} />
             <Bar isAnimationActive={false} yAxisId="runs" dataKey="partial" stackId="a" fill="#EAAA08" barSize={14} />
             <Bar isAnimationActive={false} yAxisId="runs" dataKey="failed" stackId="a" fill="#E5484D" barSize={14} radius={[2, 2, 0, 0]} />
-            <Line isAnimationActive={false} yAxisId="duration" type="monotone" dataKey="avg_duration_s" stroke="#4F46E5" strokeWidth={2} dot={false} connectNulls activeDot={{ r: 4, fill: "#4F46E5", stroke: "#fff", strokeWidth: 2 }} />
+            <Line isAnimationActive={false} yAxisId="duration" type="monotone" dataKey="avg_duration_s" stroke="#1677B8" strokeWidth={2} dot={false} connectNulls activeDot={{ r: 4, fill: "#1677B8", stroke: "#fff", strokeWidth: 2 }} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

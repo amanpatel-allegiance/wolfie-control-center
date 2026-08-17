@@ -8,8 +8,8 @@ import { cn } from "@/lib/cn";
 
 const states = ["all", "healthy", "running", "warning", "stale", "failed", "stuck"] as const;
 
-export function PipelineExplorer({ rows, initialState = "all", initialSource = "all" }: { rows: PipelineHealthRow[]; initialState?: string; initialSource?: string }) {
-  const [query, setQuery] = useState("");
+export function PipelineExplorer({ rows, initialQuery = "", initialState = "all", initialSource = "all" }: { rows: PipelineHealthRow[]; initialQuery?: string; initialState?: string; initialSource?: string }) {
+  const [query, setQuery] = useState(initialQuery);
   const [state, setState] = useState(initialState || "all");
   const [source, setSource] = useState(initialSource || "all");
   const sources = useMemo(() => Array.from(new Set(rows.map((row) => row.source_key))).sort(), [rows]);
@@ -25,8 +25,8 @@ export function PipelineExplorer({ rows, initialState = "all", initialSource = "
   const hasFilters = query || state !== "all" || source !== "all";
 
   return (
-    <div className="space-y-4">
-      <div className="surface p-3 sm:p-4">
+    <div className="space-y-3">
+      <div className="surface p-3">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
           <label className="relative min-w-0 flex-1">
             <span className="sr-only">Search pipelines</span>
@@ -34,9 +34,9 @@ export function PipelineExplorer({ rows, initialState = "all", initialSource = "
             <input value={query} onChange={(event) => setQuery(event.target.value)} className="control w-full pl-9" placeholder="Search by pipeline, key, source, or jurisdiction…" />
           </label>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 xl:pb-0">
-            <SlidersHorizontal className="size-4 shrink-0 text-wolfie-muted" />
+            <SlidersHorizontal className="size-3.5 shrink-0 text-wolfie-muted" />
             {states.map((item) => (
-              <button key={item} type="button" onClick={() => setState(item)} className={cn("h-9 shrink-0 rounded-lg px-3 text-xs font-semibold capitalize transition", state === item ? "bg-wolfie-navy text-white shadow-sm" : "bg-wolfie-soft text-wolfie-muted hover:text-wolfie-ink")}>
+              <button key={item} type="button" onClick={() => setState(item)} className={cn("h-8 shrink-0 rounded-lg px-2.5 text-[11px] font-semibold capitalize transition", state === item ? "bg-wolfie-navy text-white shadow-sm" : "bg-wolfie-soft text-wolfie-muted hover:text-wolfie-ink")}>
                 {item}
               </button>
             ))}

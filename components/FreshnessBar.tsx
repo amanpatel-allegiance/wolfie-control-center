@@ -17,7 +17,7 @@ export function FreshnessBar({ hours, slaHours }: { hours: number | null; slaHou
         <span className="font-semibold text-wolfie-ink">{hours.toFixed(hours < 10 ? 1 : 0)}h old</span>
         <span>{Math.round(pct)}% of SLA</span>
       </div>
-      <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-wolfie-soft ring-1 ring-inset ring-black/[.025]" title={`Freshness SLA: ${slaHours} hours`}>
+      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-[#EDF0F3]" title={`Freshness SLA: ${slaHours} hours`}>
         <div className={cn("h-full rounded-full transition-[width] duration-500", color)} style={{ width: `${width}%` }} />
       </div>
     </div>

@@ -4,10 +4,10 @@ import { useEffect, useState, useTransition } from "react";
 import { CheckCircle2, Play, X, Zap } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-type Props = { pipelineKey: string; canRun: boolean; scheduler: string };
+type Props = { pipelineKey: string; canRun: boolean; scheduler: string; label?: string; initialMode?: "incremental" | "full" | "dry-run" };
 
-export function ManualRunButton({ pipelineKey, canRun, scheduler }: Props) {
-  const [mode, setMode] = useState<"incremental" | "full" | "dry-run">("incremental");
+export function ManualRunButton({ pipelineKey, canRun, scheduler, label = "Trigger run", initialMode = "incremental" }: Props) {
+  const [mode, setMode] = useState<"incremental" | "full" | "dry-run">(initialMode);
   const [note, setNote] = useState("");
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -32,14 +32,14 @@ export function ManualRunButton({ pipelineKey, canRun, scheduler }: Props) {
     });
   };
 
-  if (!canRun) return <button type="button" title="Operator role required" disabled className="secondary-button cursor-not-allowed"><Play className="size-4" /> Trigger run</button>;
+  if (!canRun) return <button type="button" title="Operator role required" disabled className="secondary-button cursor-not-allowed"><Play className="size-4" /> {label}</button>;
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="primary-button"><Play className="size-4 fill-current" /> Trigger run</button>
+      <button type="button" onClick={() => setOpen(true)} className="primary-button"><Play className="size-4 fill-current" /> {label}</button>
       {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-wolfie-navy/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="run-dialog-title" onMouseDown={(event) => event.target === event.currentTarget && setOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl border border-white/70 bg-wolfie-panel p-6 shadow-lift">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-wolfie-navy/60 p-4" role="dialog" aria-modal="true" aria-labelledby="run-dialog-title" onMouseDown={(event) => event.target === event.currentTarget && setOpen(false)}>
+          <div className="w-full max-w-md rounded-[10px] border border-wolfie-border bg-wolfie-panel p-6 shadow-lift">
             <div className="flex items-start justify-between gap-4">
               <div className="grid size-10 place-items-center rounded-xl bg-wolfie-lavender text-wolfie-accent"><Zap className="size-5" /></div>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="grid size-9 place-items-center rounded-lg text-wolfie-muted hover:bg-wolfie-soft hover:text-wolfie-ink"><X className="size-4" /></button>

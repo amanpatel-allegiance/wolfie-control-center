@@ -31,8 +31,8 @@ export function HealthBadge({ state, size = "sm" }: { state: HealthState; size?:
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-semibold capitalize ring-1 ring-inset",
-        size === "xs" ? "px-2 py-0.5 text-2xs" : "px-2.5 py-1 text-xs",
+        "inline-flex items-center gap-1 rounded-full font-bold capitalize ring-1 ring-inset",
+        size === "xs" ? "px-2 py-0.5 text-[10px]" : "px-2 py-1 text-[10px]",
         HEALTH_STYLES[state],
       )}
     >
@@ -52,7 +52,7 @@ export function RunStatusBadge({ status }: { status: RunStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold capitalize ring-1 ring-inset",
+        "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold capitalize ring-1 ring-inset",
         RUN_STYLES[status] ?? "bg-wolfie-soft text-wolfie-muted ring-wolfie-border",
       )}
     >

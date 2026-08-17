@@ -1,157 +1,29 @@
-import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { ArrowLeft, ExternalLink, Info } from "lucide-react";
 import { supabaseServer } from "@/lib/supabase/server";
-import {
-  getCurrentRole,
-  getDailyStats,
-  getDatasetSnapshots,
-  getPipelineByKey,
-  getRecentRuns,
-} from "@/lib/data";
-import { HealthBadge } from "@/components/StatusBadge";
+import { getCurrentRole, getDailyStats, getDatasetSnapshots, getPipelineByKey, getPipelineManualRuns, getPipelineScheduleAudit, getRecentRuns } from "@/lib/data";
+import { changedRows, processedRows, rejectedRows, runMode } from "@/lib/run-stats";
+import { formatDuration, formatNumber, formatRelative, formatUtc } from "@/lib/format";
+import { HealthBadge, RunStatusBadge } from "@/components/StatusBadge";
 import { MetricCard } from "@/components/MetricCard";
 import { FreshnessBar } from "@/components/FreshnessBar";
-import { RunsList } from "@/components/RunsList";
-import { RunDurationChart } from "@/components/RunDurationChart";
 import { ManualRunButton } from "@/components/ManualRunButton";
-import { formatDuration, formatRelative, formatUtc, redactSecrets } from "@/lib/format";
-import { ArrowLeft, Clock3, Database, ExternalLink } from "lucide-react";
+import { RunDurationChart } from "@/components/RunDurationChart";
+import { RunsList } from "@/components/RunsList";
+import { EmptyState } from "@/components/EmptyState";
 
 export const dynamic = "force-dynamic";
-
-export default async function PipelineDetail({ params }: { params: Promise<{ key: string }> }) {
-  const { key } = await params;
-  const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  if (!data.user) redirect("/login");
-
-  const p = await getPipelineByKey(key);
-  if (!p) notFound();
-
-  const [role, runs, daily, snapshots] = await Promise.all([
-    getCurrentRole(),
-    getRecentRuns({ pipelineKey: key, limit: 30 }),
-    getDailyStats(p.id, 30),
-    getDatasetSnapshots(p.id, 5),
-  ]);
-
-  const canRun = role === "operator" || role === "admin";
-  const okRuns = runs.filter((r) => r.status === "succeeded" || r.status === "succeeded_with_warnings" || r.status === "unchanged").length;
-  const successRate = runs.length > 0 ? Math.round((okRuns / runs.length) * 100) : null;
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <div className="mb-4 flex items-center gap-2 text-xs text-wolfie-muted">
-          <Link href="/pipelines" className="inline-flex items-center gap-1 font-medium hover:text-wolfie-accent"><ArrowLeft className="size-3.5" /> Pipelines</Link>
-          <span className="text-wolfie-border">/</span><span>{p.source_key}</span>
-        </div>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="eyebrow mb-2">Pipeline detail</div>
-            <h1 className="page-title">{p.name}</h1>
-            <p className="page-copy">{p.description ?? p.key}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <HealthBadge state={p.health_state} />
-            <ManualRunButton pipelineKey={p.key} canRun={canRun} scheduler={p.scheduler} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <MetricCard label="Freshness" value={p.freshness_hours != null ? `${p.freshness_hours.toFixed(1)}h` : "—"} hint={`SLA ${p.freshness_sla_hours}h`} />
-        <MetricCard label="Last success" value={p.last_success_started_at ? formatRelative(p.last_success_started_at) : "never"} />
-        <MetricCard label="Last failure" value={p.last_failure_started_at ? formatRelative(p.last_failure_started_at) : "none"} />
-        <MetricCard label="Success rate" value={successRate != null ? `${successRate}%` : "—"} hint={`over last ${runs.length} runs`} />
-        <MetricCard label="Expected duration" value={p.expected_duration_s ? formatDuration(p.expected_duration_s) : "—"} hint={p.timeout_s ? `timeout ${formatDuration(p.timeout_s)}` : undefined} />
-      </div>
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        <div className="surface p-5">
-          <div className="flex items-center gap-2 eyebrow"><Clock3 className="size-4 text-wolfie-accent" />Schedule</div>
-          <div className="mt-4 inline-flex rounded-lg bg-wolfie-soft px-2.5 py-1.5 font-mono text-sm tabular">{p.schedule_expression || "—"}</div>
-          <div className="mt-2 text-xs text-wolfie-muted">
-            {p.schedule_timezone} · scheduler: <b>{p.scheduler}</b>
-          </div>
-          <div className="mt-1 text-xs text-wolfie-muted">strategy: {p.refresh_strategy}</div>
-          {p.repository && (
-            <a href={p.repository} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-wolfie-accent hover:underline">
-              {p.repository.replace("https://github.com/", "")}<ExternalLink className="size-3" />
-            </a>
-          )}
-        </div>
-
-        <div className="surface p-5">
-          <div className="flex items-center gap-2 eyebrow"><Database className="size-4 text-wolfie-accent" />Destinations</div>
-          <ul className="mt-4 flex flex-wrap gap-2">
-            {p.destination_tables.map((t, index) => (
-              <li key={`${t}-${index}`} className="rounded-lg bg-wolfie-soft px-2.5 py-1.5 font-mono text-2xs">{t}</li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="surface p-5">
-          <div className="eyebrow">Freshness</div>
-          <div className="mt-4">
-            <FreshnessBar hours={p.freshness_hours} slaHours={p.freshness_sla_hours} />
-          </div>
-          <div className="mt-3 text-xs leading-5 text-wolfie-muted">
-            data last materially changed: {p.last_change_at ? formatUtc(p.last_change_at) : "unknown"}
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight">Run history <span className="font-normal text-wolfie-muted">· 30 days</span></h2>
-        <RunDurationChart data={daily} />
-      </section>
-
-      {p.latest_status === "failed" && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Latest error</h2>
-          <pre className="overflow-auto rounded-2xl border border-state-failed/20 bg-state-failed/[.04] p-5 text-2xs whitespace-pre-wrap tabular text-state-failed">
-            {redactSecrets(runs[0]?.error) || "(no message)"}
-          </pre>
-        </section>
-      )}
-
-      {snapshots.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold tracking-tight">Recent dataset snapshots</h2>
-          <div className="table-shell overflow-x-auto">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th className="px-4 py-2 text-left">Dataset</th>
-                  <th className="px-4 py-2 text-right">Total rows</th>
-                  <th className="px-4 py-2 text-right">Inserted</th>
-                  <th className="px-4 py-2 text-right">Updated</th>
-                  <th className="px-4 py-2 text-right">Unchanged</th>
-                  <th className="px-4 py-2 text-left">Snapshot</th>
-                </tr>
-              </thead>
-              <tbody>
-                {snapshots.map((s: any) => (
-                  <tr key={s.id}>
-                    <td className="px-4 py-2 font-mono text-2xs">{s.dataset}</td>
-                    <td className="px-4 py-2 text-right tabular">{(s.total_rows ?? 0).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right tabular">{(s.inserted_count ?? 0).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right tabular">{(s.updated_count ?? 0).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-right tabular">{(s.unchanged_count ?? 0).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-2xs text-wolfie-muted">{formatUtc(s.snapshot_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight">Recent runs</h2>
-        <RunsList runs={runs} showPipeline={false} />
-      </section>
-    </div>
-  );
+const tabs = ["overview", "runs", "quality", "configuration", "audit"] as const;
+export default async function PipelineDetail({ params, searchParams }: { params: Promise<{ key: string }>; searchParams: Promise<{ tab?: string }> }) {
+  const [{ key }, query] = await Promise.all([params, searchParams]); const sb = await supabaseServer(); const { data } = await sb.auth.getUser(); if (!data.user) redirect("/login"); const p = await getPipelineByKey(key); if (!p) notFound(); const tab = tabs.includes(query.tab as typeof tabs[number]) ? query.tab! : "overview";
+  const [role, runs, daily, snapshots, manual, scheduleAudit] = await Promise.all([getCurrentRole(), getRecentRuns({ pipelineKey: key, limit: 100 }), getDailyStats(p.id, 30), getDatasetSnapshots(p.id, 50), getPipelineManualRuns(p.id), getPipelineScheduleAudit(p.id)]); const latest = runs[0]; const good = runs.filter((r) => ["succeeded", "succeeded_with_warnings", "unchanged"].includes(r.status)).length; const rate = runs.length ? Math.round(good / runs.length * 100) : null; const canRun = role === "operator" || role === "admin";
+  return <div className="space-y-4"><div><div className="mb-3 flex items-center gap-1.5 text-[11px] text-wolfie-muted"><Link href="/pipelines" className="inline-flex items-center gap-1 hover:text-wolfie-accent"><ArrowLeft className="size-3"/>Pipelines</Link><span>/</span><span>{p.source_key}</span><span>/</span><span className="text-wolfie-ink">{p.key}</span></div><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2"><h1 className="page-title">{p.name}</h1><HealthBadge state={p.health_state}/></div><p className="page-copy">{p.description ?? `${p.source_key} production pipeline`}</p></div><ManualRunButton pipelineKey={p.key} canRun={canRun} scheduler={p.scheduler}/></div></div>
+    <nav className="flex gap-5 overflow-x-auto border-b border-wolfie-border" aria-label="Pipeline views">{tabs.map((item) => <Link key={item} href={`/pipelines/${p.key}?tab=${item}`} className={`shrink-0 border-b-2 px-0.5 pb-2.5 text-[11px] font-semibold capitalize ${tab === item ? "border-wolfie-accent text-wolfie-accent" : "border-transparent text-wolfie-muted hover:text-wolfie-ink"}`}>{item}</Link>)}</nav>
+    {tab === "overview" && <><section className="metrics-strip grid grid-cols-2 gap-3 lg:grid-cols-5"><MetricCard label="Freshness" value={p.freshness_hours == null ? "—" : `${p.freshness_hours.toFixed(1)}h`} hint={`SLA ${p.freshness_sla_hours}h`} tone={p.freshness_hours != null && p.freshness_hours <= p.freshness_sla_hours ? "healthy" : "warning"}/><MetricCard label="Success rate" value={rate == null ? "—" : `${rate}%`} hint={`${runs.length} retained runs`} tone={rate != null && rate >= 90 ? "healthy" : "warning"}/><MetricCard label="Last success" value={formatRelative(p.last_success_started_at)} tone="healthy"/><MetricCard label="Expected runtime" value={formatDuration(p.expected_duration_s)} hint={p.timeout_s ? `Timeout ${formatDuration(p.timeout_s)}` : undefined}/><MetricCard label="Latest rows changed" value={latest && changedRows(latest) != null ? formatNumber(changedRows(latest)!) : "—"}/></section><div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,.6fr)]"><RunDurationChart data={daily}/><section className="surface overflow-hidden"><div className="card-header"><div><h2 className="card-heading">Current sync</h2><p className="card-copy">Latest reported execution counters</p></div></div>{latest ? <dl className="divide-y divide-wolfie-border/80 text-[11px]">{[["Status", <RunStatusBadge key="status" status={latest.status}/>],["Mode", runMode(latest)],["Processed", processedRows(latest) == null ? "Unavailable" : formatNumber(processedRows(latest)!)],["Changed", changedRows(latest) == null ? "Unavailable" : formatNumber(changedRows(latest)!)],["Rejected", rejectedRows(latest) == null ? "Unavailable" : formatNumber(rejectedRows(latest)!)],["Started", formatRelative(latest.started_at)]].map(([label, value]) => <div key={String(label)} className="flex items-center justify-between gap-4 px-4 py-3"><dt className="text-wolfie-muted">{label}</dt><dd className="text-right font-semibold">{value}</dd></div>)}</dl> : <EmptyState compact title="No run history" description="This pipeline has not reported a production run."/>}</section></div><section><div className="mb-2 flex items-center justify-between"><h2 className="card-heading">Recent runs</h2><Link href={`/pipelines/${p.key}?tab=runs`} className="text-[11px] font-semibold text-wolfie-accent">View all</Link></div><RunsList runs={runs} showPipeline={false} limit={8}/></section></>}
+    {tab === "runs" && <><section className="metrics-strip grid grid-cols-2 gap-3 lg:grid-cols-4"><MetricCard label="Retained runs" value={runs.length}/><MetricCard label="Successful" value={good} tone="healthy"/><MetricCard label="Failed" value={runs.filter((r) => ["failed","timed_out"].includes(r.status)).length} tone="failed"/><MetricCard label="Success rate" value={rate == null ? "—" : `${rate}%`}/></section><RunsList runs={runs} showPipeline={false}/></>}
+    {tab === "quality" && <section className="surface overflow-hidden"><div className="card-header"><div><h2 className="card-heading">Dataset snapshots</h2><p className="card-copy">Measured row integrity and change counters</p></div></div>{snapshots.length ? <div className="overflow-x-auto"><table className="data-table min-w-[850px]"><thead><tr><th className="text-left">Dataset</th><th className="text-right">Total rows</th><th className="text-right">Inserted</th><th className="text-right">Updated</th><th className="text-right">Rejected</th><th className="text-right">Duplicates</th><th className="text-left">Snapshot</th></tr></thead><tbody>{snapshots.map((s) => <tr key={s.id}><td className="font-mono text-[10px]">{s.dataset}</td><td className="text-right tabular">{s.total_rows == null ? "—" : formatNumber(s.total_rows)}</td><td className="text-right tabular">{s.inserted_count ?? "—"}</td><td className="text-right tabular">{s.updated_count ?? "—"}</td><td className="text-right tabular">{s.rejected_count ?? "—"}</td><td className="text-right tabular">{s.duplicate_count ?? "—"}</td><td>{formatRelative(s.snapshot_at)}</td></tr>)}</tbody></table></div> : <EmptyState title="Quality telemetry unavailable" description="This pipeline has not published dataset snapshots. No quality score or trend is fabricated."/>}</section>}
+    {tab === "configuration" && <div className="grid gap-4 lg:grid-cols-2"><section className="surface p-4"><h2 className="card-heading">Orchestration</h2><dl className="mt-3 divide-y divide-wolfie-border text-[11px]">{[["Scheduler",p.scheduler],["Cron",p.schedule_expression ?? "Not scheduled"],["Timezone",p.schedule_timezone],["Refresh strategy",p.refresh_strategy],["Freshness SLA",`${p.freshness_sla_hours}h`],["Expected runtime",formatDuration(p.expected_duration_s)],["Timeout",formatDuration(p.timeout_s)]].map(([a,b]) => <div key={a} className="flex justify-between gap-4 py-2.5"><dt className="text-wolfie-muted">{a}</dt><dd className="font-medium">{b}</dd></div>)}</dl></section><section className="surface p-4"><h2 className="card-heading">Destinations & ownership</h2><div className="mt-3 flex flex-wrap gap-2">{p.destination_tables.map((table) => <code key={table} className="rounded-md bg-wolfie-soft px-2 py-1 text-[10px]">{table}</code>)}</div>{p.repository && <a href={p.repository} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1 text-[11px] font-semibold text-wolfie-accent">Open repository<ExternalLink className="size-3"/></a>}<div className="mt-4"><FreshnessBar hours={p.freshness_hours} slaHours={p.freshness_sla_hours}/><p className="mt-2 text-[10px] text-wolfie-muted">Last material change: {formatUtc(p.last_change_at)}</p></div></section></div>}
+    {tab === "audit" && <div className="space-y-4"><div className="flex gap-3 rounded-[10px] border border-state-running/20 bg-state-running/[.05] p-4"><Info className="size-4 text-state-running"/><p className="text-[11px] text-wolfie-muted">Only persisted operator and schedule audit records are shown.</p></div><section className="surface overflow-hidden"><div className="card-header"><h2 className="card-heading">Operator actions</h2></div>{manual.length || scheduleAudit.length ? <div className="divide-y divide-wolfie-border">{manual.map((m) => <div key={`m${m.id}`} className="px-4 py-3 text-[11px]"><b>Manual {m.mode} run</b> · {m.dispatch_status}<span className="ml-2 text-wolfie-muted">{formatUtc(m.requested_at)}</span></div>)}{scheduleAudit.map((a) => <div key={`s${a.id}`} className="px-4 py-3 text-[11px]"><b>{a.action}</b><span className="ml-2 text-wolfie-muted">{formatUtc(a.created_at)}</span></div>)}</div> : <EmptyState title="No audit activity" description="No manual dispatch or schedule audit records exist for this pipeline."/>}</section></div>}
+  </div>;
 }

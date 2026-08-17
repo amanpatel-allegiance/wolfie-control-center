@@ -46,14 +46,20 @@ export type Pipeline = {
   schedule_expression: string | null;
   schedule_timezone: string;
   refresh_strategy: string;
+  environment?: string;
+  pipeline_type?: string;
   freshness_sla_hours: number;
   expected_duration_s: number | null;
   timeout_s: number | null;
+  max_retries?: number;
+  concurrency?: number;
   destination_tables: string[];
   enabled: boolean;
+  metadata?: Record<string, unknown>;
 };
 
 export type PipelineHealthRow = Pipeline & {
+  source_name?: string;
   latest_run_id: number | null;
   latest_status: RunStatus | null;
   latest_started_at: string | null;
@@ -147,6 +153,70 @@ export type AlertEvent = {
   description: string | null;
   status: "open" | "acknowledged" | "resolved" | "expired";
   fired_at: string;
+  acknowledged_at: string | null;
+  acknowledged_by: string | null;
+  resolved_at: string | null;
   fingerprint: string;
   details: Record<string, unknown>;
+};
+
+export type AlertRule = {
+  id: number;
+  pipeline_id: number | null;
+  key: string;
+  name: string;
+  rule_type: string;
+  severity: "info" | "warning" | "critical";
+  threshold: Record<string, unknown>;
+  cooldown_minutes: number;
+  enabled: boolean;
+  channels: string[];
+  metadata: Record<string, unknown>;
+};
+
+export type DatasetSnapshot = {
+  id: number;
+  pipeline_id: number;
+  run_id: number | null;
+  dataset: string;
+  snapshot_at: string;
+  total_rows: number | null;
+  distinct_business_keys: number | null;
+  min_source_ts: string | null;
+  max_source_ts: string | null;
+  null_rate: Record<string, number>;
+  duplicate_count: number | null;
+  checksum: string | null;
+  inserted_count: number | null;
+  updated_count: number | null;
+  unchanged_count: number | null;
+  deleted_count: number | null;
+  rejected_count: number | null;
+  schema_version: string | null;
+  metadata: Record<string, unknown>;
+};
+
+export type ManualRunAudit = {
+  id: number;
+  pipeline_id: number;
+  requested_by: string;
+  requested_at: string;
+  mode: string;
+  dispatch_status: string;
+  dispatch_target: string | null;
+  dispatch_reference: string | null;
+  dispatch_error: string | null;
+  linked_run_id: number | null;
+  note: string | null;
+};
+
+export type ScheduleAudit = {
+  id: number;
+  pipeline_id: number;
+  actor: string;
+  action: string;
+  before_state: Record<string, unknown>;
+  after_state: Record<string, unknown>;
+  note: string | null;
+  created_at: string;
 };

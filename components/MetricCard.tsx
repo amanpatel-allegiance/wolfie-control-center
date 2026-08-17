@@ -9,27 +9,26 @@ type Props = {
 };
 
 const TONE = {
-  default: { text: "text-wolfie-ink", bg: "bg-wolfie-soft", line: "bg-wolfie-muted", icon: CircleGauge },
-  healthy: { text: "text-wolfie-ink", bg: "bg-state-healthy/10", line: "bg-state-healthy", icon: CheckCircle2 },
-  warning: { text: "text-wolfie-ink", bg: "bg-state-warning/10", line: "bg-state-warning", icon: AlertTriangle },
-  failed:  { text: "text-wolfie-ink", bg: "bg-state-failed/10", line: "bg-state-failed", icon: XCircle },
-  running: { text: "text-wolfie-ink", bg: "bg-state-running/10", line: "bg-state-running", icon: Activity },
-  stale:   { text: "text-wolfie-ink", bg: "bg-state-stale/10", line: "bg-state-stale", icon: Clock3 },
+  default: { text: "text-wolfie-ink", bg: "bg-wolfie-soft", iconText: "text-wolfie-muted", icon: CircleGauge },
+  healthy: { text: "text-state-healthy", bg: "bg-state-healthy/10", iconText: "text-state-healthy", icon: CheckCircle2 },
+  warning: { text: "text-state-warning", bg: "bg-state-warning/10", iconText: "text-state-warning", icon: AlertTriangle },
+  failed:  { text: "text-state-failed", bg: "bg-state-failed/10", iconText: "text-state-failed", icon: XCircle },
+  running: { text: "text-state-running", bg: "bg-state-running/10", iconText: "text-state-running", icon: Activity },
+  stale:   { text: "text-state-warning", bg: "bg-state-warning/10", iconText: "text-state-warning", icon: Clock3 },
 };
 
 export function MetricCard({ label, value, hint, tone = "default" }: Props) {
   const style = TONE[tone];
   const Icon = style.icon;
   return (
-    <div className="surface group relative overflow-hidden p-4 transition-colors hover:border-wolfie-muted/35 sm:p-5">
-      <div className={cn("absolute inset-x-0 top-0 h-0.5", style.line)} />
-      <div className="flex items-start justify-between gap-3">
-        <div className="eyebrow">{label}</div>
-        <span className={cn("grid size-8 place-items-center rounded-lg", style.bg)}>
-          <Icon className={cn("size-4", tone === "default" ? "text-wolfie-muted" : tone === "healthy" ? "text-state-healthy" : tone === "warning" ? "text-state-warning" : tone === "failed" ? "text-state-failed" : tone === "running" ? "text-state-running" : "text-state-stale")} />
+    <div className="surface min-h-[105px] p-[15px]">
+      <div className="flex items-center gap-2.5 text-xs text-[#344054]">
+        <span className={cn("grid size-[34px] place-items-center rounded-full", style.bg)}>
+          <Icon className={cn("size-4", style.iconText)} />
         </span>
+        <span>{label}</span>
       </div>
-      <div className={cn("mt-3 truncate text-2xl font-semibold tracking-[-.025em] tabular sm:text-[1.75rem]", style.text)}>{value}</div>
+      <div className={cn("mt-2 truncate text-[27px] font-bold tracking-[-.04em] tabular", style.text)}>{value}</div>
       {hint && <div className="mt-1 text-2xs text-wolfie-muted">{hint}</div>}
     </div>
   );

@@ -1,129 +1,25 @@
-import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { ArrowLeft, Braces, TerminalSquare } from "lucide-react";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getRun, getRunLogs, getRunStages } from "@/lib/data";
+import { getCurrentRole, getPipelineByKey, getRun, getRunLogs, getRunStages } from "@/lib/data";
+import { changedRows, processedRows, rejectedRows, runMode } from "@/lib/run-stats";
+import { formatDuration, formatNumber, formatUtc, redactSecrets } from "@/lib/format";
 import { RunStatusBadge } from "@/components/StatusBadge";
 import { MetricCard } from "@/components/MetricCard";
 import { StageTimeline } from "@/components/StageTimeline";
-import { formatDuration, formatUtc, redactSecrets } from "@/lib/format";
-import { ArrowLeft, Braces, TerminalSquare } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { ManualRunButton } from "@/components/ManualRunButton";
 
 export const dynamic = "force-dynamic";
-
 export default async function RunDetail({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  if (!data.user) redirect("/login");
-
-  const runId = Number(id);
-  if (!Number.isFinite(runId)) notFound();
-
-  const [run, stages, logs] = await Promise.all([
-    getRun(runId),
-    getRunStages(runId),
-    getRunLogs(runId, 300),
-  ]);
-  if (!run) notFound();
-
-  const stats: any = run.stats ?? {};
-
-  return (
-    <div className="space-y-8">
-      <div>
-        <div className="mb-4 flex items-center gap-2 text-xs text-wolfie-muted">
-          <Link href="/pipelines" className="inline-flex items-center gap-1 font-medium hover:text-wolfie-accent"><ArrowLeft className="size-3.5" /> Pipelines</Link>
-          <span className="text-wolfie-border">/</span>
-          {run.pipeline_key ? (
-            <Link href={`/pipelines/${run.pipeline_key}`} className="hover:underline">{run.pipeline_key}</Link>
-          ) : (
-            <span>(unmapped)</span>
-          )}
-          <span className="text-wolfie-border">/</span>
-          <span>run #{run.id}</span>
-        </div>
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <div className="eyebrow mb-2">Execution detail</div>
-            <h1 className="page-title">Run #{run.id}</h1>
-            <p className="page-copy font-mono">{run.kind} · corr {run.correlation_id.slice(0, 8)}</p>
-          </div>
-          <RunStatusBadge status={run.status} />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        <MetricCard label="Started"    value={formatUtc(run.started_at)} />
-        <MetricCard label="Finished"   value={run.finished_at ? formatUtc(run.finished_at) : "—"} />
-        <MetricCard label="Duration"   value={formatDuration(run.duration_s)} />
-        <MetricCard label="Trigger"    value={run.trigger} hint={`attempt ${run.attempt}`} />
-        <MetricCard label="Environment" value={run.environment} hint={run.commit_sha ? `sha ${run.commit_sha.slice(0, 7)}` : undefined} />
-      </div>
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold tracking-tight">Stages</h2>
-        <StageTimeline stages={stages} />
-      </section>
-
-      {Object.keys(stats).length > 0 && (
-        <section>
-          <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight"><Braces className="size-5 text-wolfie-accent" />Counters &amp; stats</h2>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {Object.entries(stats)
-              .filter(([, v]) => typeof v === "number" || typeof v === "string" || typeof v === "boolean")
-              .slice(0, 12)
-              .map(([k, v]) => (
-                <MetricCard key={k} label={k} value={String(v)} />
-              ))}
-          </div>
-          <details className="mt-3">
-            <summary className="cursor-pointer text-xs font-medium text-wolfie-muted hover:text-wolfie-ink">Full stats JSON</summary>
-            <pre className="surface mt-2 overflow-auto p-4 text-2xs whitespace-pre-wrap tabular">
-              {JSON.stringify(stats, null, 2)}
-            </pre>
-          </details>
-        </section>
-      )}
-
-      {(run.error || run.error_details) && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold text-state-failed">Error</h2>
-          <pre className="overflow-auto rounded-2xl border border-state-failed/20 bg-state-failed/[.04] p-5 text-2xs whitespace-pre-wrap tabular text-state-failed">
-            {redactSecrets(run.error ?? "")}
-            {run.error_details ? `\n\n${JSON.stringify(run.error_details, null, 2)}` : ""}
-          </pre>
-        </section>
-      )}
-
-      <section>
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold tracking-tight"><TerminalSquare className="size-5 text-wolfie-accent" />Logs</h2>
-        {logs.length === 0 ? (
-          <div className="surface border-dashed px-4 py-10 text-center text-sm text-wolfie-muted">
-            No log messages
-          </div>
-        ) : (
-          <div className="surface max-h-[520px] overflow-auto font-mono">
-            <table className="w-full text-2xs">
-              <thead className="bg-wolfie-soft sticky top-0 uppercase tracking-wide text-wolfie-muted">
-                <tr>
-                  <th className="px-3 py-1.5 text-left w-40">time</th>
-                  <th className="px-3 py-1.5 text-left w-16">level</th>
-                  <th className="px-3 py-1.5 text-left">message</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-wolfie-border/60">
-                {logs.map((l: any) => (
-                  <tr key={l.id}>
-                    <td className="px-3 py-1 whitespace-nowrap tabular">{formatUtc(l.created_at)}</td>
-                    <td className={`px-3 py-1 font-medium ${l.level === "error" ? "text-state-failed" : l.level === "warn" ? "text-state-warning" : "text-wolfie-muted"}`}>{l.level}</td>
-                    <td className="px-3 py-1"><span className="whitespace-pre-wrap tabular">{redactSecrets(l.message)}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </div>
-  );
+  const { id } = await params; const runId = Number(id); if (!Number.isSafeInteger(runId) || runId <= 0) notFound(); const sb = await supabaseServer(); const { data } = await sb.auth.getUser(); if (!data.user) redirect("/login");
+  const [run, stages, logs, role] = await Promise.all([getRun(runId), getRunStages(runId), getRunLogs(runId, 300), getCurrentRole()]); if (!run) notFound(); const pipeline = run.pipeline_key ? await getPipelineByKey(run.pipeline_key) : null; const stats = run.stats ?? {}; const canRun = role === "operator" || role === "admin";
+  return <div className="space-y-4"><div><div className="mb-3 flex items-center gap-1.5 text-[11px] text-wolfie-muted"><Link href="/runs" className="inline-flex items-center gap-1 hover:text-wolfie-accent"><ArrowLeft className="size-3"/>Runs</Link><span>/</span>{run.pipeline_key && <><Link href={`/pipelines/${run.pipeline_key}`} className="hover:text-wolfie-accent">{run.pipeline_key}</Link><span>/</span></>}<span className="text-wolfie-ink">#{run.id}</span></div><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2"><h1 className="page-title">Run #{run.id}</h1><RunStatusBadge status={run.status}/></div><p className="page-copy">{run.pipeline_name ?? run.kind} · correlation {run.correlation_id.slice(0, 8)}</p></div>{pipeline && <ManualRunButton pipelineKey={pipeline.key} canRun={canRun} scheduler={pipeline.scheduler} label="Retry run" initialMode={runMode(run) === "full" ? "full" : "incremental"}/>}</div></div>
+    <section className="metrics-strip grid grid-cols-2 gap-3 lg:grid-cols-5"><MetricCard label="Duration" value={formatDuration(run.duration_s)}/><MetricCard label="Rows processed" value={processedRows(run) == null ? "—" : formatNumber(processedRows(run)!)}/><MetricCard label="Rows changed" value={changedRows(run) == null ? "—" : formatNumber(changedRows(run)!)} tone="healthy"/><MetricCard label="Rejected / warnings" value={rejectedRows(run) == null ? "—" : formatNumber(rejectedRows(run)!)} tone={run.warning_count ? "warning" : "default"}/><MetricCard label="Mode" value={runMode(run)} hint={`${run.trigger} · attempt ${run.attempt}`}/></section>
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,.6fr)]"><section><h2 className="mb-2 card-heading">Execution stages</h2>{stages.length ? <StageTimeline stages={stages}/> : <div className="surface"><EmptyState title="Stage telemetry unavailable" description="This run did not publish stage-level records. The run status and counters above are still live."/></div>}</section><section className="surface overflow-hidden"><div className="card-header"><h2 className="card-heading">Run metadata</h2></div><dl className="divide-y divide-wolfie-border text-[11px]">{[["Started",formatUtc(run.started_at)],["Finished",formatUtc(run.finished_at)],["Environment",run.environment],["Trigger",run.trigger],["Commit",run.commit_sha?.slice(0,12) ?? "—"],["Kind",run.kind],["Heartbeat",formatUtc(run.heartbeat_at)]].map(([a,b]) => <div key={a} className="flex justify-between gap-4 px-4 py-3"><dt className="text-wolfie-muted">{a}</dt><dd className="max-w-[190px] truncate text-right font-medium">{b}</dd></div>)}</dl></section></div>
+    {(run.error || run.error_details) && <section className="overflow-hidden rounded-[10px] border border-state-failed/25 bg-state-failed/[.045]"><div className="border-b border-state-failed/15 px-4 py-3 text-xs font-semibold text-state-failed">Execution error</div><pre className="overflow-auto whitespace-pre-wrap p-4 text-[10px] leading-5 text-state-failed">{redactSecrets(run.error ?? "")}{run.error_details ? `\n\n${redactSecrets(JSON.stringify(run.error_details, null, 2))}` : ""}</pre></section>}
+    <section className="surface overflow-hidden"><div className="card-header"><TerminalSquare className="size-4 text-wolfie-accent"/><div><h2 className="card-heading">Logs</h2><p className="card-copy">Persisted run messages</p></div></div>{logs.length ? <div className="max-h-[520px] overflow-auto"><table className="w-full font-mono text-[10px]"><thead className="sticky top-0 bg-wolfie-soft text-wolfie-muted"><tr><th className="w-44 px-3 py-2 text-left">Timestamp</th><th className="w-16 px-3 py-2 text-left">Level</th><th className="px-3 py-2 text-left">Message</th></tr></thead><tbody className="divide-y divide-wolfie-border">{logs.map((log: any) => <tr key={log.id}><td className="px-3 py-2 text-wolfie-muted">{formatUtc(log.created_at)}</td><td className={`px-3 py-2 font-semibold ${log.level === "error" ? "text-state-failed" : log.level === "warn" ? "text-state-warning" : "text-wolfie-muted"}`}>{log.level}</td><td className="whitespace-pre-wrap px-3 py-2">{redactSecrets(log.message)}</td></tr>)}</tbody></table></div> : <EmptyState compact title="No persisted logs" description="The log table has no messages for this run."/>}</section>
+    {Object.keys(stats).length > 0 && <details className="surface overflow-hidden"><summary className="flex cursor-pointer items-center gap-2 px-4 py-3 text-xs font-semibold"><Braces className="size-4 text-wolfie-accent"/>Raw reported stats</summary><pre className="overflow-auto border-t border-wolfie-border bg-wolfie-soft p-4 text-[10px]">{JSON.stringify(stats, null, 2)}</pre></details>}
+  </div>;
 }
