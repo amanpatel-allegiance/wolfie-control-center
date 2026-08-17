@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { Activity, ArrowRight, CheckCircle2, Database, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+
+function Pulse() { return <svg className="size-[38px] text-[#22C98B]" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M2 26h8l4-13 6 25 6-29 5 18 4-8 4 7h7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -30,37 +32,35 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-screen min-w-0 overflow-hidden bg-wolfie-bg lg:grid-cols-[minmax(420px,.82fr)_1.18fr]">
-      <section className="relative hidden overflow-hidden bg-wolfie-navy p-12 text-white lg:flex lg:flex-col xl:p-16">
-        <div className="flex items-center gap-3"><span className="relative grid size-11 place-items-center rounded-lg border border-white/15 bg-white/[.06] text-[#22C98B]"><Activity className="size-5" /><i className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full border-2 border-wolfie-navy bg-state-healthy" /></span><div><div className="font-semibold">Wolfie</div><div className="text-[10px] uppercase tracking-[.18em] text-[#8FA0B5]">Control center</div></div></div>
-        <div className="my-auto"><div className="eyebrow !text-[#8FA0B5]">Production observability</div><h1 className="mt-4 max-w-md text-[38px] font-semibold leading-[1.14] tracking-[-.035em]">A calm, precise view of every data pipeline.</h1><p className="mt-5 max-w-md text-sm leading-7 text-[#AAB7C7]">Monitor freshness, run outcomes, schedules, incidents and measured data quality from one operational workspace.</p><div className="mt-8 grid max-w-sm gap-3 text-xs text-[#D2DCE8]"><span className="flex items-center gap-2"><CheckCircle2 className="size-4 text-[#22C98B]"/>Live production health</span><span className="flex items-center gap-2"><Database className="size-4 text-[#22C98B]"/>Real pipeline telemetry</span></div></div>
-        <div className="flex items-center gap-2 text-xs text-[#8FA0B5]"><ShieldCheck className="size-4 text-state-healthy" /> Secure passwordless access</div>
-      </section>
+    <div className="fixed inset-0 z-[60] grid place-items-center overflow-auto bg-[#F2F3F5] p-[14px] lg:p-[4vh_5vw]">
+      <div className="grid w-full max-w-[1080px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_70px_rgba(16,24,40,.15)] lg:min-h-[660px] lg:grid-cols-[44%_56%]">
+        <section className="relative hidden flex-col overflow-hidden bg-wolfie-navy p-[54px] text-white lg:flex">
+          <div className="flex items-center gap-3"><Pulse/><div><b className="text-[21px]">Wolfie</b><div className="text-[10px] tracking-[.15em] text-[#9DAFC3]">CONTROL CENTER</div></div></div>
+          <div className="my-auto"><div className="eyebrow !text-[#24D69A]">DATA OPERATIONS</div><h1 className="mb-[14px] mt-[70px] text-[40px] font-semibold leading-[1.12] tracking-[-.04em]">Every pipeline.<br/>One clear signal.</h1><p className="leading-[1.6] text-[#A8B6C8]">Freshness, failures and refresh controls across your data platform.</p><div className="mt-7 grid gap-[14px] text-[13px]">{[["✓","Live run health"],["◷","Freshness SLA tracking"],["◇","Audited refresh controls"]].map(([icon,label]) => <div key={label} className="flex items-center gap-[10px]"><i className="grid size-[30px] place-items-center rounded-full border border-[#415167] not-italic text-[#26D39A]">{icon}</i>{label}</div>)}</div></div>
+          <div aria-hidden="true" className="absolute -bottom-10 -right-[30px] size-[280px] rotate-[-8deg] bg-[linear-gradient(rgba(255,255,255,.25)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.25)_1px,transparent_1px)] bg-[size:36px_36px] opacity-[.19]"/>
+        </section>
 
-      <section className="flex min-w-0 items-center justify-center p-4 sm:p-12 lg:p-16">
-        <div className="box-border min-w-0 w-full max-w-full rounded-[10px] border border-wolfie-border bg-white p-6 shadow-card sm:max-w-[430px] sm:p-9">
-          <div className="mb-10 flex items-center gap-3 lg:hidden"><span className="grid size-10 place-items-center rounded-xl bg-wolfie-navy text-white"><Activity className="size-5" /></span><span className="font-semibold">Wolfie Control Center</span></div>
-          <div className="eyebrow">Welcome back</div>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-.03em]">Sign in to your workspace</h2>
-          <p className="mt-2 text-sm leading-6 text-wolfie-muted">Enter your work email and we&apos;ll send you a secure magic link.</p>
+        <section className="flex min-w-0 flex-col justify-center px-7 py-[52px] lg:px-[90px] lg:py-[70px]">
+          <div className="eyebrow !text-[#24D69A]">WELCOME BACK</div>
+          <h2 className="my-2 text-[35px] font-semibold tracking-[-.04em]">Sign in to Wolfie</h2>
+          <p className="leading-[1.55] text-wolfie-muted">Use your work email to receive a secure magic link.</p>
 
           {state === "sent" ? (
-            <div className="mt-8 rounded-[10px] border border-state-healthy/20 bg-state-healthy/[.06] p-5">
+            <div className="mt-7 rounded-[10px] border border-state-healthy/20 bg-state-healthy/[.06] p-5">
               <CheckCircle2 className="size-7 text-state-healthy" /><div className="mt-3 font-semibold">Check your inbox</div><p className="mt-1 text-sm leading-6 text-wolfie-muted">We sent a sign-in link to <b className="text-wolfie-ink">{email}</b>.</p>
               <button type="button" onClick={() => setState("idle")} className="mt-4 text-xs font-semibold text-wolfie-accent hover:underline">Use another email</button>
             </div>
           ) : (
-            <form onSubmit={send} className="min-w-0 mt-8 space-y-4">
-              <label className="block text-xs font-semibold">Work email
-                <span className="relative mt-2 block min-w-0"><Mail className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-wolfie-muted" /><input type="email" required autoFocus autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className="control h-12 min-w-0 w-full pl-10" /></span>
-              </label>
-              <button type="submit" disabled={state === "sending"} className="primary-button h-12 w-full">{state === "sending" ? "Sending secure link…" : <>Continue with email <ArrowRight className="size-4" /></>}</button>
+            <form onSubmit={send} className="min-w-0">
+              <label className="mb-[7px] mt-[26px] block text-xs font-bold">Work email</label>
+              <input type="email" required autoFocus autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className="h-12 min-w-0 w-full rounded-lg border border-[#CCD3DC] px-[13px] text-sm outline-none focus:border-wolfie-accent focus:shadow-[0_0_0_3px_rgba(15,159,110,.12)]" />
+              <button type="submit" disabled={state === "sending"} className="ref-btn ref-btn-primary mt-[14px] h-12 w-full">{state === "sending" ? "Sending secure link…" : <>Send magic link <ArrowRight className="size-4" /></>}</button>
               {state === "error" && <div role="alert" className="rounded-xl bg-state-failed/10 p-3 text-xs text-state-failed">{msg}</div>}
             </form>
           )}
-          <p className="mt-8 text-center text-2xs leading-5 text-wolfie-muted">By continuing, you agree to your organization&apos;s access and security policies.</p>
-        </div>
-      </section>
+          <div className="mt-[14px] text-[11px] text-wolfie-muted">♙ Secure, passwordless sign-in. Magic link expires in 15 minutes.</div>
+        </section>
+      </div>
     </div>
   );
 }

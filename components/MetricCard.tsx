@@ -22,14 +22,14 @@ export function MetricCard({ label, value, hint, tone = "default" }: Props) {
   const Icon = style.icon;
   return (
     <div className="surface min-h-[105px] p-[15px]">
-      <div className="flex items-center gap-2.5 text-xs text-[#344054]">
+      <div className="flex items-center gap-[10px] text-xs text-[#344054]">
         <span className={cn("grid size-[34px] place-items-center rounded-full", style.bg)}>
           <Icon className={cn("size-4", style.iconText)} />
         </span>
         <span>{label}</span>
       </div>
-      <div className={cn("mt-2 truncate text-[27px] font-bold tracking-[-.04em] tabular", style.text)}>{value}</div>
-      {hint && <div className="mt-1 text-2xs text-wolfie-muted">{hint}</div>}
+      <div className={cn("mb-[3px] mt-2 truncate text-[27px] font-[750] tracking-[-.04em] tabular", style.text)}>{value}</div>
+      {hint && <small className="text-[11px] text-wolfie-muted">{hint}</small>}
     </div>
   );
 }

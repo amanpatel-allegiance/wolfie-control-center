@@ -1,72 +1,38 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AlertTriangle, ArrowUpRight, CheckCircle2, Clock3, Database, Radio, Rows3, ShieldCheck } from "lucide-react";
+import { Activity, CalendarDays, Check, Play, Rows3, X } from "lucide-react";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getAlerts, getOverviewKpis, getPipelineHealth, getRecentRuns, getWorkspaceDailyStats } from "@/lib/data";
 import { changedRows, processedRows } from "@/lib/run-stats";
 import { formatDuration, formatNumber, formatRelative } from "@/lib/format";
 import { PageHeader } from "@/components/PageHeader";
-import { RefreshButton } from "@/components/RefreshButton";
 import { MetricCard } from "@/components/MetricCard";
 import { HealthBadge, RunStatusBadge } from "@/components/StatusBadge";
-import { FreshnessBar } from "@/components/FreshnessBar";
-import { OperationalCard } from "@/components/OperationalCard";
 import { RunSuccessTrend } from "@/components/RunSuccessTrend";
+import { AutoRefreshButton } from "@/components/AutoRefreshButton";
 
 export const dynamic = "force-dynamic";
-
 const good = new Set(["succeeded", "succeeded_with_warnings", "unchanged"]);
-const severity: Record<string, number> = { stuck: 0, failed: 1, stale: 2, warning: 3, delayed: 4, running: 5, unknown: 6, disabled: 7, healthy: 8 };
+const attentionState = new Set(["warning", "delayed", "stale", "failed", "stuck", "unknown"]);
 
 export default async function OverviewPage() {
-  const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  if (!data.user) redirect("/login");
+  const sb = await supabaseServer(); const { data } = await sb.auth.getUser(); if (!data.user) redirect("/login");
   const [kpis, pipelines, runs, alerts, daily] = await Promise.all([getOverviewKpis(), getPipelineHealth(), getRecentRuns({ limit: 300 }), getAlerts("open"), getWorkspaceDailyStats(14)]);
-  const completed = runs.filter((run) => !["queued", "running", "scheduled"].includes(run.status));
-  const successful = completed.filter((run) => good.has(run.status));
-  const successRate = completed.length ? Math.round(successful.length / completed.length * 100) : null;
-  const dayAgo = Date.now() - 86_400_000;
-  const last24 = runs.filter((run) => new Date(run.started_at).getTime() >= dayAgo);
-  const last24Rows = last24.reduce((sum, run) => sum + (changedRows(run) ?? 0), 0);
-  const attention = [...pipelines].filter((p) => !["healthy", "disabled"].includes(p.health_state)).sort((a, b) => (severity[a.health_state] ?? 99) - (severity[b.health_state] ?? 99)).slice(0, 7);
-  const latestByPipeline = new Map(runs.map((run) => [run.pipeline_id, run]));
-  const sources = new Map<string, typeof pipelines>();
-  for (const p of pipelines) sources.set(p.source_key, [...(sources.get(p.source_key) ?? []), p]);
-  const operational = attention.length === 0 && alerts.length === 0;
+  const dayAgo = Date.now() - 86_400_000; const last24 = runs.filter((r) => new Date(r.started_at).getTime() >= dayAgo); const completed24 = last24.filter((r) => !["queued","running","scheduled"].includes(r.status)); const failed24 = completed24.filter((r) => !good.has(r.status)); const rowsProcessed = last24.reduce((sum,r) => sum + (processedRows(r) ?? 0), 0);
+  const withinSla = pipelines.filter((p) => p.freshness_hours != null && p.freshness_hours <= p.freshness_sla_hours).length; const slaPct = pipelines.length ? Math.round(withinSla / pipelines.length * 1000) / 10 : null; const attention = pipelines.filter((p) => attentionState.has(p.health_state)); const pipelineRows = [...pipelines].sort((a,b) => (attentionState.has(b.health_state) ? 1 : 0) - (attentionState.has(a.health_state) ? 1 : 0)).slice(0,5); const latestByPipeline = new Map(runs.map((r) => [r.pipeline_id,r]));
+  const sourceGroups = new Map<string, typeof pipelines>(); for (const p of pipelines) sourceGroups.set(p.source_key,[...(sourceGroups.get(p.source_key) ?? []),p]);
+  const activity = runs.slice(0,4);
+  return <section>
+    <PageHeader title="Operations overview" description="Live health across every extraction and sync pipeline" actions={<><button className="ref-btn"><CalendarDays className="size-3.5"/>Last 24 hours⌄</button><AutoRefreshButton/><Link href="/pipelines" className="ref-btn ref-btn-primary"><Play className="size-3.5 fill-current"/>Run pipeline</Link></>}/>
 
-  return <div className="space-y-4">
-    <PageHeader eyebrow="Production workspace" title="Operations overview" description="Live reliability, freshness and throughput from the production control-plane tables." actions={<RefreshButton />} />
+    <div className="ref-health-banner surface"><span className="ref-health-good">✓</span><strong>Platform {attention.length || alerts.length ? "requires attention" : "healthy"} · {withinSla} of {pipelines.length} pipelines within SLA</strong><div className="ref-health-links"><Link href="/pipelines?state=warning" className="ref-warn-link">△ {attention.length} pipeline{attention.length === 1 ? "" : "s"} nearing or outside SLA</Link><Link href="/alerts" className="ref-danger-link">! {alerts.length} incident{alerts.length === 1 ? "" : "s"} open</Link></div></div>
 
-    <section className={`flex flex-col gap-3 rounded-[10px] border px-4 py-3 sm:flex-row sm:items-center ${operational ? "border-state-healthy/20 bg-state-healthy/[.055]" : "border-state-warning/25 bg-state-warning/[.065]"}`}>
-      <span className={`grid size-9 shrink-0 place-items-center rounded-full ${operational ? "bg-state-healthy/10 text-state-healthy" : "bg-state-warning/10 text-state-warning"}`}>{operational ? <ShieldCheck className="size-[18px]"/> : <AlertTriangle className="size-[18px]"/>}</span>
-      <div className="min-w-0 flex-1"><div className="text-xs font-semibold">{operational ? "All monitored systems are operational" : `${attention.length} pipeline${attention.length === 1 ? " requires" : "s require"} attention`}</div><div className="mt-0.5 text-[11px] text-wolfie-muted">{operational ? "No open incidents or unhealthy pipelines were reported." : `${alerts.length} open incident${alerts.length === 1 ? "" : "s"}; review operational severity below.`}</div></div>
-      <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-wolfie-muted"><Radio className="size-3 text-state-healthy"/>Live production telemetry</span>
-    </section>
+    <div className="ref-metrics"><MetricCard label="Healthy" value={kpis.healthy} hint={`${withinSla} within freshness SLA`} tone="healthy"/><MetricCard label="Running" value={kpis.running} hint={`${last24.length} runs in last 24h`} tone="running"/><MetricCard label="SLA compliance" value={slaPct == null ? "—" : `${slaPct}%`} hint={`${withinSla} of ${pipelines.length} pipelines`} tone={slaPct != null && slaPct >= 90 ? "healthy" : "warning"}/><MetricCard label="Rows processed" value={formatNumber(rowsProcessed)} hint="Reported in last 24h" tone="running"/><MetricCard label="Failed runs" value={failed24.length} hint={`${completed24.length} completed in last 24h`} tone={failed24.length ? "failed" : "healthy"}/></div>
 
-    <section className="metrics-strip grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-      <MetricCard label="Healthy pipelines" value={`${kpis.healthy}/${kpis.pipelines_total}`} hint={kpis.healthy_pct == null ? "No pipelines" : `${Math.round(kpis.healthy_pct)}% fleet health`} tone="healthy" />
-      <MetricCard label="Success rate" value={successRate == null ? "—" : `${successRate}%`} hint={`Across ${completed.length} retained runs`} tone={successRate != null && successRate >= 90 ? "healthy" : "warning"}/>
-      <MetricCard label="Runs · 24 hours" value={last24.length} hint={`${last24.filter((run) => !good.has(run.status)).length} non-successful`} tone="running"/>
-      <MetricCard label="Rows changed · 24h" value={formatNumber(last24Rows)} hint="Reported by pipeline stats" />
-      <MetricCard label="Open incidents" value={alerts.length} hint={alerts.length ? "Needs review" : "Queue is clear"} tone={alerts.length ? "failed" : "healthy"}/>
-    </section>
-
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(330px,.7fr)]">
-      <OperationalCard title="Pipelines requiring attention" description="Live health states ordered by operational severity" action={{ href: "/pipelines", label: "View all" }}>
-        {attention.length ? <div className="overflow-x-auto"><table className="data-table min-w-[760px]"><thead><tr><th className="text-left">Pipeline</th><th className="text-left">Health</th><th className="text-left">Latest run</th><th className="text-left">Freshness / SLA</th><th className="text-right">Rows changed</th></tr></thead><tbody>{attention.map((p) => { const run = latestByPipeline.get(p.id); return <tr key={p.id}><td><Link href={`/pipelines/${p.key}`} className="group font-semibold hover:text-wolfie-accent">{p.name}<ArrowUpRight className="ml-1 inline size-3 opacity-0 group-hover:opacity-100"/></Link><div className="mt-0.5 text-[10px] text-wolfie-muted">{p.source_key} · {p.key}</div></td><td><HealthBadge state={p.health_state}/></td><td>{p.latest_status ? <RunStatusBadge status={p.latest_status}/> : "—"}<div className="mt-1 text-[10px] text-wolfie-muted">{formatRelative(p.latest_started_at)}</div></td><td className="w-[170px]"><FreshnessBar hours={p.freshness_hours} slaHours={p.freshness_sla_hours}/></td><td className="text-right tabular">{run && changedRows(run) != null ? formatNumber(changedRows(run)!) : "—"}</td></tr>; })}</tbody></table></div> : <div className="empty-panel"><div><CheckCircle2 className="mx-auto size-7 text-state-healthy"/><div className="mt-3 text-xs font-semibold">No pipelines require attention</div><div className="mt-1 text-[11px] text-wolfie-muted">Every enabled pipeline is currently inside its health policy.</div></div></div>}
-      </OperationalCard>
-
-      <OperationalCard title="Freshness by source" description="Oldest pipeline compared with its SLA">
-        <div className="divide-y divide-wolfie-border/80">{[...sources.entries()].map(([source, list]) => { const worst = [...list].sort((a,b) => ((b.freshness_hours ?? 0) / Math.max(b.freshness_sla_hours, 1)) - ((a.freshness_hours ?? 0) / Math.max(a.freshness_sla_hours, 1)))[0]; return <div key={source} className="px-4 py-3"><div className="mb-2 flex items-center justify-between"><span className="text-[11px] font-semibold">{source}</span><span className="text-[10px] text-wolfie-muted">{list.length} pipeline{list.length === 1 ? "" : "s"}</span></div><FreshnessBar hours={worst.freshness_hours} slaHours={worst.freshness_sla_hours}/></div>; })}</div>
-      </OperationalCard>
+    <div className="ref-grid-main"><div className="surface overflow-hidden"><div className="ref-card-head"><h2>Pipeline health</h2><Link href="/pipelines">View all pipelines →</Link></div><div className="overflow-auto"><table className="data-table min-w-[720px]"><thead><tr><th>Pipeline</th><th>Status</th><th>Freshness</th><th>Last run</th><th>Duration</th><th>Row delta</th><th>Next run</th></tr></thead><tbody>{pipelineRows.map((p) => { const run = latestByPipeline.get(p.id); return <tr key={p.id}><td className="name"><Link href={`/pipelines/${p.key}`}><strong>{p.name}</strong></Link><small>{p.source_key}</small></td><td><HealthBadge state={p.health_state}/></td><td>{formatRelative(p.last_change_at ?? p.last_success_started_at)}</td><td>{formatRelative(p.latest_started_at)}</td><td>{formatDuration(run?.duration_s)}</td><td className={(run && (changedRows(run) ?? 0) > 0) ? "text-state-healthy" : ""}>{run && changedRows(run) != null ? `+${formatNumber(changedRows(run)!)}` : "—"}</td><td>{p.schedule_expression ? "Scheduled" : "—"}</td></tr>; })}</tbody></table></div></div>
+      <div className="surface overflow-hidden"><div className="ref-card-head"><h2>Freshness by source</h2><Link href="/pipelines">View all</Link></div><div className="px-[14px] py-[10px]">{[...sourceGroups.entries()].slice(0,5).map(([source,list]) => { const worst = [...list].sort((a,b) => ((b.freshness_hours ?? 0)/Math.max(b.freshness_sla_hours,1))-((a.freshness_hours ?? 0)/Math.max(a.freshness_sla_hours,1)))[0]; const pct = worst.freshness_hours == null ? 0 : Math.round(worst.freshness_hours / Math.max(worst.freshness_sla_hours,1) * 100); return <div key={source} className="grid grid-cols-[130px_1fr_42px] items-center gap-[10px] py-[9px] text-[11px]"><span className="truncate">{source}</span><div className="h-1.5 overflow-hidden rounded-full bg-[#EDF0F3]"><i className={`block h-full rounded-full ${pct > 100 ? "bg-state-failed" : pct > 75 ? "bg-state-warning" : "bg-state-healthy"}`} style={{width:`${Math.min(100,pct)}%`}}/></div><b>{pct}%</b></div>; })}</div></div>
     </div>
 
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(330px,.7fr)]">
-      <OperationalCard title="Run success trend" description="Daily success rate across production pipelines · 14 days" action={{ href: "/runs", label: "Run history" }}><RunSuccessTrend rows={daily}/></OperationalCard>
-      <OperationalCard title="Recent activity" description="Latest runs and incident activity" action={{ href: "/runs", label: "View all" }}>
-        <div className="divide-y divide-wolfie-border/80">{runs.slice(0, 7).map((run) => <Link key={run.id} href={`/runs/${run.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-wolfie-soft"><span className={`grid size-8 shrink-0 place-items-center rounded-full ${good.has(run.status) ? "bg-state-healthy/10 text-state-healthy" : run.status === "running" ? "bg-state-running/10 text-state-running" : "bg-state-failed/10 text-state-failed"}`}>{run.status === "running" ? <Clock3 className="size-3.5"/> : <Rows3 className="size-3.5"/>}</span><div className="min-w-0 flex-1"><div className="truncate text-[11px] font-semibold">{run.pipeline_name ?? run.pipeline_key ?? "Unmapped run"}</div><div className="mt-0.5 text-[10px] text-wolfie-muted">#{run.id} · {formatDuration(run.duration_s)} · {processedRows(run) == null ? "rows unavailable" : `${formatNumber(processedRows(run)!)} processed`}</div></div><span className="text-[10px] text-wolfie-muted">{formatRelative(run.started_at)}</span></Link>)}</div>
-      </OperationalCard>
-    </div>
-  </div>;
+    <div className="ref-grid-even"><div className="surface overflow-hidden"><div className="ref-card-head"><h2>Run success rate</h2><span className="ml-auto text-[11px] text-wolfie-muted">14 days⌄</span></div><RunSuccessTrend rows={daily}/></div><div className="surface overflow-hidden"><div className="ref-card-head"><h2>Recent activity</h2><Link href="/runs">View all</Link></div><ul className="ref-activity">{activity.map((run) => { const ok = good.has(run.status); const running = run.status === "running"; return <li key={run.id}><span className={`ref-event-dot ${ok ? "bg-state-healthy/10 text-state-healthy" : running ? "bg-state-running/10 text-state-running" : "bg-state-failed/10 text-state-failed"}`}>{ok ? <Check className="size-2.5"/> : running ? <Activity className="size-2.5"/> : <X className="size-2.5"/>}</span><div><Link href={`/runs/${run.id}`}>{run.pipeline_name ?? run.pipeline_key ?? `Run ${run.id}`} {ok ? "completed" : run.status}</Link><small>{formatDuration(run.duration_s)} · Run {run.id}{processedRows(run) != null ? ` · ${formatNumber(processedRows(run)!)} rows` : ""}</small></div><RunStatusBadge status={run.status}/></li>; })}{!activity.length && <li><span className="ref-event-dot bg-wolfie-soft"><Rows3 className="size-2.5"/></span><div>No run activity reported<small>The production run view returned no rows.</small></div></li>}</ul></div></div>
+  </section>;
 }
