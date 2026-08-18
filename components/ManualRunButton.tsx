@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { CheckCircle2, ChevronDown, LockKeyhole, Play, X, Zap } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -32,11 +33,9 @@ export function ManualRunButton({ pipelineKey, canRun, scheduler, label = "Trigg
     });
   };
 
-  if (!canRun) return <button type="button" title="Operator role required" disabled className="ref-btn cursor-not-allowed opacity-60"><LockKeyhole />{label}</button>;
-
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="ref-btn ref-btn-primary"><Play className="fill-current" />{label}{label === "Trigger run" && <ChevronDown />}</button>
+      <button type="button" onClick={() => setOpen(true)} className={canRun ? "ref-btn ref-btn-primary" : "ref-btn"}>{canRun ? <Play className="fill-current" /> : <LockKeyhole />}{label}{label === "Trigger run" && <ChevronDown />}</button>
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-wolfie-navy/60 p-4" role="dialog" aria-modal="true" aria-labelledby="run-dialog-title" onMouseDown={(event) => event.target === event.currentTarget && setOpen(false)}>
           <div className="w-full max-w-md rounded-[10px] border border-wolfie-border bg-wolfie-panel p-6 shadow-lift">
@@ -44,10 +43,10 @@ export function ManualRunButton({ pipelineKey, canRun, scheduler, label = "Trigg
               <div className="grid size-10 place-items-center rounded-xl bg-wolfie-lavender text-wolfie-accent"><Zap className="size-5" /></div>
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="grid size-9 place-items-center rounded-lg text-wolfie-muted hover:bg-wolfie-soft hover:text-wolfie-ink"><X className="size-4" /></button>
             </div>
-            <h3 id="run-dialog-title" className="mt-4 text-xl font-semibold tracking-tight">Trigger pipeline run</h3>
-            <p className="mt-1 text-sm leading-6 text-wolfie-muted">Run <span className="font-semibold text-wolfie-ink">{pipelineKey}</span> via <code>{scheduler}</code>. This action is rate-limited and audited.</p>
+            <h3 id="run-dialog-title" className="mt-4 text-xl font-semibold tracking-tight">{canRun ? "Trigger pipeline run" : "Operator access required"}</h3>
+            <p className="mt-1 text-sm leading-6 text-wolfie-muted">{canRun ? <>Run <span className="font-semibold text-wolfie-ink">{pipelineKey}</span> via <code>{scheduler}</code>. This action is rate-limited and audited.</> : <>Production dispatch for <span className="font-semibold text-wolfie-ink">{pipelineKey}</span> is protected. Sign in with an operator or admin account; viewer access remains read-only.</>}</p>
 
-            <label className="mt-5 block text-xs font-semibold">Run mode</label>
+            {canRun && <><label className="mt-5 block text-xs font-semibold">Run mode</label>
             <div className="mt-2 grid grid-cols-3 gap-2 rounded-xl bg-wolfie-soft p-1">
               {(["incremental", "full", "dry-run"] as const).map((item) => (
                 <button key={item} type="button" onClick={() => setMode(item)} className={cn("rounded-lg px-2 py-2 text-xs font-semibold capitalize transition", mode === item ? "bg-white text-wolfie-accent shadow-sm" : "text-wolfie-muted hover:text-wolfie-ink")}>{item}</button>
@@ -57,11 +56,11 @@ export function ManualRunButton({ pipelineKey, canRun, scheduler, label = "Trigg
             <label className="mt-5 block text-xs font-semibold">Operator note <span className="font-normal text-wolfie-muted">(optional)</span></label>
             <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} className="control mt-2 h-auto min-h-20 w-full resize-none py-2.5" placeholder="e.g. retry after 429 spike" />
 
-            {result && <div className={cn("mt-4 flex items-center gap-2 rounded-xl p-3 text-xs font-medium", result.ok ? "bg-state-healthy/10 text-state-healthy" : "bg-state-failed/10 text-state-failed")}>{result.ok && <CheckCircle2 className="size-4" />}{result.msg}</div>}
+            {result && <div className={cn("mt-4 flex items-center gap-2 rounded-xl p-3 text-xs font-medium", result.ok ? "bg-state-healthy/10 text-state-healthy" : "bg-state-failed/10 text-state-failed")}>{result.ok && <CheckCircle2 className="size-4" />}{result.msg}</div>}</>}
 
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setOpen(false)} className="secondary-button">Cancel</button>
-              <button type="button" onClick={dispatch} disabled={pending} className="primary-button"><Play className="size-4 fill-current" />{pending ? "Dispatching…" : `Run ${mode}`}</button>
+              {canRun ? <button type="button" onClick={dispatch} disabled={pending} className="primary-button"><Play className="size-4 fill-current" />{pending ? "Dispatching…" : `Run ${mode}`}</button> : <Link href="/login" className="primary-button">Sign in</Link>}
             </div>
           </div>
         </div>

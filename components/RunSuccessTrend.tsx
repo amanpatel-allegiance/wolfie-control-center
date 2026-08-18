@@ -1,22 +1,22 @@
+"use client";
+
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { DailyStats } from "@/lib/types";
 
-function smoothPath(points: ReadonlyArray<readonly [number, number]>): string {
-  if (!points.length) return "";
-  if (points.length === 1) return `M${points[0][0]} ${points[0][1]}`;
+function shortDate(day: string) {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString("en-AE", { day: "numeric", month: "short", timeZone: "UTC" });
+}
 
-  let path = `M${points[0][0].toFixed(1)} ${points[0][1].toFixed(1)}`;
-  for (let index = 0; index < points.length - 1; index += 1) {
-    const previous = points[Math.max(0, index - 1)];
-    const current = points[index];
-    const next = points[index + 1];
-    const following = points[Math.min(points.length - 1, index + 2)];
-    const firstControlX = current[0] + (next[0] - previous[0]) / 6;
-    const firstControlY = current[1] + (next[1] - previous[1]) / 6;
-    const secondControlX = next[0] - (following[0] - current[0]) / 6;
-    const secondControlY = next[1] - (following[1] - current[1]) / 6;
-    path += ` C${firstControlX.toFixed(1)} ${firstControlY.toFixed(1)} ${secondControlX.toFixed(1)} ${secondControlY.toFixed(1)} ${next[0].toFixed(1)} ${next[1].toFixed(1)}`;
-  }
-  return path;
+function SuccessTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { day: string; rate: number; succeeded: number; total: number } }> }) {
+  if (!active || !payload?.length) return null;
+  const point = payload[0].payload;
+  return (
+    <div className="chart-tooltip">
+      <small>{shortDate(point.day)}</small>
+      <strong>{point.rate}% success rate</strong>
+      <span>{point.succeeded} of {point.total} runs succeeded</span>
+    </div>
+  );
 }
 
 export function RunSuccessTrend({ rows }: { rows: DailyStats[] }) {
@@ -35,27 +35,30 @@ export function RunSuccessTrend({ rows }: { rows: DailyStats[] }) {
 
   if (!data.length) return <div className="empty-panel min-h-[238px] text-xs text-wolfie-muted">No daily run aggregates are available for this period.</div>;
 
-  const width = 700;
-  const top = 18;
-  const bottom = 180;
-  const x = (index: number) => data.length === 1 ? width / 2 : index * (width / (data.length - 1));
-  const y = (rate: number) => bottom - (Math.max(0, Math.min(100, rate)) / 100) * (bottom - top);
-  const points = data.map((item, index) => [x(index), y(item.rate)] as const);
-  const line = smoothPath(points);
-  const area = data.length > 1 ? `${line} L${width} ${bottom} L0 ${bottom} Z` : "";
   const current = data[data.length - 1];
-  const currentPoint = points[points.length - 1];
-
   return (
-    <div className="p-[14px]">
-      <svg className="h-[200px] w-full overflow-visible" viewBox={`0 0 ${width} 210`} preserveAspectRatio="none" role="img" aria-label={`Run success rate from ${data[0].day} to ${current.day}; current rate ${current.rate}%`}>
-        <defs><linearGradient id="successFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#0F9F6E" stopOpacity="0.12"/><stop offset="100%" stopColor="#0F9F6E" stopOpacity="0"/></linearGradient></defs>
-        <g stroke="#E6E9ED" strokeWidth="1">{[18, 58.5, 99, 139.5, 180].map((gy) => <path key={gy} d={`M0 ${gy}H${width}`} />)}</g>
-        {area && <path d={area} fill="url(#successFill)" />}
-        {data.length > 1 && <path d={line} fill="none" stroke="#0F9F6E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
-        <circle cx={currentPoint[0]} cy={currentPoint[1]} r="5" fill={current.rate < 90 ? "#E43D3D" : "#0F9F6E"} stroke="#fff" strokeWidth="2"><title>{`${current.day}: ${current.rate}% success`}</title></circle>
-      </svg>
-      <div className="flex justify-between text-[11px] text-wolfie-muted"><span>{data[0].day}</span><b className={current.rate < 90 ? "text-state-failed" : "text-state-healthy"}>{current.rate}% current</b></div>
+    <div className="px-3 pb-3 pt-4">
+      <div className="h-[205px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 6, right: 12, bottom: 2, left: -10 }}>
+            <defs>
+              <linearGradient id="successTrendFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#0F9F6E" stopOpacity={0.18} />
+                <stop offset="100%" stopColor="#0F9F6E" stopOpacity={0.015} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#E8ECF1" vertical={false} strokeDasharray="3 4" />
+            <XAxis dataKey="day" tickFormatter={shortDate} minTickGap={30} axisLine={false} tickLine={false} tick={{ fill: "#7A8698", fontSize: 10 }} dy={8} />
+            <YAxis domain={[0, 100]} ticks={[0, 25, 50, 75, 100]} tickFormatter={(value) => `${value}%`} width={42} axisLine={false} tickLine={false} tick={{ fill: "#7A8698", fontSize: 10 }} />
+            <Tooltip content={<SuccessTooltip />} cursor={{ stroke: "#98A2B3", strokeWidth: 1, strokeDasharray: "3 3" }} />
+            <Area type="monotone" dataKey="rate" stroke="#0F9F6E" strokeWidth={2.5} fill="url(#successTrendFill)" activeDot={{ r: 5, fill: "#0F9F6E", stroke: "#fff", strokeWidth: 2 }} dot={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-2 flex items-center justify-between border-t border-wolfie-border/70 px-1 pt-3 text-[10px] text-wolfie-muted">
+        <span>{shortDate(data[0].day)} – {shortDate(current.day)}</span>
+        <b className={current.rate < 90 ? "text-state-failed" : "text-state-healthy"}>{current.rate}% current</b>
+      </div>
     </div>
   );
 }
