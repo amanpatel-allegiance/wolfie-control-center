@@ -4,6 +4,7 @@ import { getPipelineHealth, getRecentRuns, getWorkspaceDailyStats } from "@/lib/
 import { PipelineExplorer } from "@/components/PipelineExplorer";
 import { PageHeader } from "@/components/PageHeader";
 import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { Download, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,7 @@ export default async function PipelinesPage({ searchParams }: { searchParams: Pr
   const [rows, runs, daily] = await Promise.all([getPipelineHealth(), getRecentRuns({ limit: 500 }), getWorkspaceDailyStats(30)]);
   return (
     <div>
-      <PageHeader title="Pipelines" description={`${rows.length} monitored pipelines across ${new Set(rows.map((r) => r.source_key)).size} sources`} actions={<><button disabled title="Export is not connected" className="ref-btn">⇩ Export</button><button disabled title="Pipeline creation is not connected" className="ref-btn ref-btn-primary">＋ New pipeline</button></>} />
+      <PageHeader title="Pipelines" description={`${rows.length} monitored pipelines across ${new Set(rows.map((r) => r.source_key)).size} sources`} actions={<><button disabled title="Export is not connected" className="ref-btn"><Download />Export</button><button disabled title="Pipeline creation is not connected" className="ref-btn ref-btn-primary"><Plus />New pipeline</button></>} />
       <PipelineExplorer rows={rows} runs={runs} daily={daily} initialQuery={params.q} initialState={params.state} initialSource={params.source} />
     </div>
   );

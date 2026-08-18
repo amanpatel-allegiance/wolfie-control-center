@@ -1,7 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/browser";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { Activity, ArrowRight, CheckCircle2, Clock3, LockKeyhole, ShieldCheck, type LucideIcon } from "lucide-react";
+
+const FEATURES: ReadonlyArray<{ icon: LucideIcon; label: string }> = [
+  { icon: Activity, label: "Live run health" },
+  { icon: Clock3, label: "Freshness SLA tracking" },
+  { icon: ShieldCheck, label: "Audited refresh controls" },
+];
 
 function Pulse() { return <svg className="size-[38px] text-[#22C98B]" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M2 26h8l4-13 6 25 6-29 5 18 4-8 4 7h7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
 
@@ -34,9 +40,9 @@ export default function LoginPage() {
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center overflow-auto bg-[#F2F3F5] p-[14px] lg:p-[4vh_5vw]">
       <div className="grid w-full max-w-[1080px] overflow-hidden rounded-2xl bg-white shadow-[0_24px_70px_rgba(16,24,40,.15)] lg:min-h-[660px] lg:grid-cols-[44%_56%]">
-        <section className="relative hidden flex-col overflow-hidden bg-wolfie-navy p-[54px] text-white lg:flex">
+        <section className="relative hidden flex-col overflow-hidden bg-[radial-gradient(circle_at_15%_5%,rgba(34,201,139,.13),transparent_17rem),linear-gradient(155deg,#0b192a,#06101c)] p-[54px] text-white lg:flex">
           <div className="flex items-center gap-3"><Pulse/><div><b className="text-[21px]">Wolfie</b><div className="text-[10px] tracking-[.15em] text-[#9DAFC3]">CONTROL CENTER</div></div></div>
-          <div className="my-auto"><div className="eyebrow !text-[#24D69A]">DATA OPERATIONS</div><h1 className="mb-[14px] mt-[70px] text-[40px] font-semibold leading-[1.12] tracking-[-.04em]">Every pipeline.<br/>One clear signal.</h1><p className="leading-[1.6] text-[#A8B6C8]">Freshness, failures and refresh controls across your data platform.</p><div className="mt-7 grid gap-[14px] text-[13px]">{[["✓","Live run health"],["◷","Freshness SLA tracking"],["◇","Audited refresh controls"]].map(([icon,label]) => <div key={label} className="flex items-center gap-[10px]"><i className="grid size-[30px] place-items-center rounded-full border border-[#415167] not-italic text-[#26D39A]">{icon}</i>{label}</div>)}</div></div>
+          <div className="my-auto"><div className="eyebrow !text-[#24D69A]">DATA OPERATIONS</div><h1 className="mb-[14px] mt-[70px] text-[40px] font-semibold leading-[1.12] tracking-[-.04em]">Every pipeline.<br/>One clear signal.</h1><p className="leading-[1.6] text-[#A8B6C8]">Freshness, failures and refresh controls across your data platform.</p><div className="mt-7 grid gap-[14px] text-[13px]">{FEATURES.map(({icon:Icon,label}) => <div key={label} className="flex items-center gap-[10px]"><i className="grid size-[30px] place-items-center rounded-full border border-[#415167] bg-white/[.025] not-italic text-[#26D39A] shadow-[inset_0_1px_0_rgba(255,255,255,.08)]"><Icon className="size-3.5"/></i>{label}</div>)}</div></div>
           <div aria-hidden="true" className="absolute -bottom-10 -right-[30px] size-[280px] rotate-[-8deg] bg-[linear-gradient(rgba(255,255,255,.25)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.25)_1px,transparent_1px)] bg-[size:36px_36px] opacity-[.19]"/>
         </section>
 
@@ -58,7 +64,7 @@ export default function LoginPage() {
               {state === "error" && <div role="alert" className="rounded-xl bg-state-failed/10 p-3 text-xs text-state-failed">{msg}</div>}
             </form>
           )}
-          <div className="mt-[14px] text-[11px] text-wolfie-muted">♙ Secure, passwordless sign-in. Magic link expires in 15 minutes.</div>
+          <div className="mt-[14px] flex items-center gap-1.5 text-[11px] text-wolfie-muted"><LockKeyhole className="size-3.5"/>Secure, passwordless sign-in. Magic link expires in 15 minutes.</div>
         </section>
       </div>
     </div>

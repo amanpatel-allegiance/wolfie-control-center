@@ -23,9 +23,9 @@ export function MetricCard({ label, value, hint, tone = "default", icon }: Props
   const style = TONE[tone];
   const Icon = style.icon;
   return (
-    <div className="surface min-h-[105px] p-[15px]">
+    <div className="metric-card surface group min-h-[105px] p-[15px]">
       <div className="flex items-center gap-[10px] text-xs text-[#344054]">
-        <span className={cn("grid size-[34px] place-items-center rounded-full", style.bg)}>
+        <span className={cn("metric-icon grid size-[34px] place-items-center rounded-full", style.bg, style.iconText)}>
           {icon ?? <Icon className={cn("size-4", style.iconText)} />}
         </span>
         <span>{label}</span>

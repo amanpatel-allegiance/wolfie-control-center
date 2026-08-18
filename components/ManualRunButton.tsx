@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { CheckCircle2, Play, X, Zap } from "lucide-react";
+import { CheckCircle2, ChevronDown, LockKeyhole, Play, X, Zap } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type Props = { pipelineKey: string; canRun: boolean; scheduler: string; label?: string; initialMode?: "incremental" | "full" | "dry-run" };
@@ -32,11 +32,11 @@ export function ManualRunButton({ pipelineKey, canRun, scheduler, label = "Trigg
     });
   };
 
-  if (!canRun) return <button type="button" title="Operator role required" disabled className="ref-btn cursor-not-allowed opacity-60">▶ {label}</button>;
+  if (!canRun) return <button type="button" title="Operator role required" disabled className="ref-btn cursor-not-allowed opacity-60"><LockKeyhole />{label}</button>;
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="ref-btn ref-btn-primary">▶ {label}{label === "Trigger run" ? "⌄" : ""}</button>
+      <button type="button" onClick={() => setOpen(true)} className="ref-btn ref-btn-primary"><Play className="fill-current" />{label}{label === "Trigger run" && <ChevronDown />}</button>
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-wolfie-navy/60 p-4" role="dialog" aria-modal="true" aria-labelledby="run-dialog-title" onMouseDown={(event) => event.target === event.currentTarget && setOpen(false)}>
           <div className="w-full max-w-md rounded-[10px] border border-wolfie-border bg-wolfie-panel p-6 shadow-lift">

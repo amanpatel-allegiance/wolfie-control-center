@@ -3,17 +3,33 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight, Menu, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  CalendarClock,
+  ChevronDown,
+  ChevronRight,
+  CirclePlay,
+  Clock3,
+  Database,
+  LayoutDashboard,
+  Menu,
+  Search,
+  ShieldCheck,
+  Workflow,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 
-const items = [
-  { href: "/", label: "Overview", glyph: "⌂" },
-  { href: "/pipelines", label: "Pipelines", glyph: "⌘" },
-  { href: "/runs", label: "Runs", glyph: "▷" },
-  { href: "/schedules", label: "Schedules", glyph: "▣" },
-  { href: "/alerts", label: "Incidents", glyph: "△" },
-  { href: "/quality", label: "Data quality", glyph: "◇" },
-] as const;
+const items: ReadonlyArray<{ href: string; label: string; icon: LucideIcon }> = [
+  { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/pipelines", label: "Pipelines", icon: Workflow },
+  { href: "/runs", label: "Runs", icon: CirclePlay },
+  { href: "/schedules", label: "Schedules", icon: CalendarClock },
+  { href: "/alerts", label: "Incidents", icon: AlertTriangle },
+  { href: "/quality", label: "Data quality", icon: ShieldCheck },
+];
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -42,6 +58,7 @@ function NavLinks({ pathname, mobile = false, onNavigate }: { pathname: string; 
     <nav className={mobile ? "grid gap-1" : "grid gap-1 px-2 py-3"} aria-label="Primary navigation">
       {items.map((item) => {
         const active = isActive(pathname, item.href);
+        const Icon = item.icon;
         return (
           <Link
             key={item.href}
@@ -54,7 +71,7 @@ function NavLinks({ pathname, mobile = false, onNavigate }: { pathname: string; 
             )}
           >
             {!mobile && active && <span className="absolute -left-2 top-2 bottom-2 w-[3px] rounded-r bg-[#20C589]" />}
-            <span className={cn("grid w-[17px] place-items-center text-[17px] leading-none", active ? "text-[#24D69A]" : "text-[#8FA0B5] group-hover:text-white")}>{item.glyph}</span>
+            <span className={cn("grid size-7 shrink-0 place-items-center rounded-lg transition", active ? "bg-[#20C589]/10 text-[#29D79B]" : "text-[#8FA0B5] group-hover:bg-white/[.06] group-hover:text-white")}><Icon className="size-[17px]" strokeWidth={1.8} /></span>
             <span>{item.label}</span>
             {mobile && active && <ChevronRight className="ml-auto size-4 text-[#8FA0B5]" />}
           </Link>
@@ -78,26 +95,26 @@ export function ApplicationShell({ children, email, role, alertCount }: { childr
   }, [drawerOpen]);
 
   return (
-    <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[232px] flex-col bg-wolfie-navy min-[821px]:flex">
+    <div className="control-center-shell min-h-screen">
+      <aside className="control-sidebar fixed inset-y-0 left-0 z-40 hidden w-[232px] flex-col bg-wolfie-navy min-[821px]:flex">
         <div className="flex h-[76px] items-center border-b border-white/[.08] px-[18px]"><Brand /></div>
         <NavLinks pathname={pathname} />
-        <div className="mt-auto p-3"><div className="flex items-center gap-[10px] border-t border-white/[.08] p-[11px]"><span className="grid size-[34px] shrink-0 place-items-center rounded-lg border border-[#435268] text-[11px] text-white">▥</span><div className="min-w-0 text-xs text-white"><div>Wolfie Data Platform</div><small className="text-[10px] text-[#8FA0B5]">Production workspace</small></div></div></div>
+        <div className="mt-auto p-3"><div className="flex items-center gap-[10px] border-t border-white/[.08] p-[11px]"><span className="grid size-[34px] shrink-0 place-items-center rounded-lg border border-[#435268] bg-white/[.03] text-white"><Database className="size-4 text-[#AFC0D3]" /></span><div className="min-w-0 text-xs text-white"><div>Wolfie Data Platform</div><small className="text-[10px] text-[#8FA0B5]">Production workspace</small></div></div></div>
       </aside>
 
       <div className="min-w-0 min-[821px]:pl-[232px]">
         <header className="sticky top-0 z-30 flex h-[58px] items-center gap-4 border-b border-white/10 bg-wolfie-navy px-4 min-[821px]:border-wolfie-border min-[821px]:bg-white min-[821px]:px-6">
           <button type="button" onClick={() => setDrawerOpen(true)} className="grid size-9 place-items-center rounded-lg text-white min-[821px]:hidden" aria-label="Open navigation"><Menu className="size-5" /></button>
-          <form action="/pipelines" method="get" className="hidden h-9 w-[min(440px,42vw)] items-center gap-2 rounded-lg border border-wolfie-border bg-white px-3 text-wolfie-muted min-[821px]:flex">
-            <span className="text-base leading-none">⌕</span>
+          <form action="/pipelines" method="get" className="top-search hidden h-9 w-[min(440px,42vw)] items-center gap-2 rounded-lg border border-wolfie-border bg-white px-3 text-wolfie-muted min-[821px]:flex">
+            <Search className="size-3.5 shrink-0" strokeWidth={2} />
             <input name="q" className="min-w-0 flex-1 border-0 bg-transparent text-xs outline-none placeholder:text-wolfie-subtle" placeholder="Search pipelines, datasets, runs…" />
             <kbd className="rounded border border-wolfie-border px-1.5 py-0.5 text-[10px] text-wolfie-subtle">⌘K</kbd>
           </form>
           <div className="flex-1" />
-          <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#33445A] bg-[#102033] px-3 text-[13px] font-semibold text-white min-[821px]:border-wolfie-border min-[821px]:bg-white min-[821px]:text-[#344054]"><i className="size-[7px] rounded-full bg-state-healthy" />Production⌄</span>
-          <span className="hidden h-9 items-center gap-1.5 rounded-lg border border-wolfie-border bg-white px-3 text-[13px] font-semibold text-[#344054] sm:inline-flex">◷ GST (UTC+4)⌄</span>
-          <Link href="/alerts" className="relative hidden size-9 place-items-center rounded-lg border border-wolfie-border bg-white text-base text-wolfie-muted hover:text-wolfie-ink sm:grid" aria-label={`${alertCount} open incidents`}>♧{alertCount > 0 && <span className="absolute -right-1.5 -top-1.5 grid min-w-[17px] h-[17px] place-items-center rounded-full border-2 border-white bg-state-failed px-0.5 text-[9px] font-semibold text-white">{Math.min(alertCount, 99)}</span>}</Link>
-          <form action="/api/auth/logout" method="post"><button type="submit" title={`Signed in as ${email} · ${role}. Click to sign out.`} className="grid size-8 place-items-center rounded-full bg-wolfie-navy text-[10px] font-semibold text-white">{initials}</button></form>
+          <span className="topbar-pill inline-flex h-9 items-center gap-2 rounded-lg border border-[#33445A] bg-[#102033] px-3 text-[13px] font-semibold text-white min-[821px]:border-wolfie-border min-[821px]:bg-white min-[821px]:text-[#344054]"><i className="status-live-dot size-[7px] rounded-full bg-state-healthy" />Production<ChevronDown className="size-3.5 opacity-60" /></span>
+          <span className="topbar-pill hidden h-9 items-center gap-1.5 rounded-lg border border-wolfie-border bg-white px-3 text-[13px] font-semibold text-[#344054] sm:inline-flex"><Clock3 className="size-3.5 text-wolfie-muted" />GST (UTC+4)<ChevronDown className="size-3.5 opacity-60" /></span>
+          <Link href="/alerts" className="topbar-icon relative hidden size-9 place-items-center rounded-lg border border-wolfie-border bg-white text-wolfie-muted hover:text-wolfie-ink sm:grid" aria-label={`${alertCount} open incidents`}><Bell className="size-4" />{alertCount > 0 && <span className="absolute -right-1.5 -top-1.5 grid min-w-[17px] h-[17px] place-items-center rounded-full border-2 border-white bg-state-failed px-0.5 text-[9px] font-semibold text-white">{Math.min(alertCount, 99)}</span>}</Link>
+          <form action="/api/auth/logout" method="post"><button type="submit" title={`Signed in as ${email} · ${role}. Click to sign out.`} className="topbar-avatar grid size-8 place-items-center rounded-full bg-wolfie-navy text-[10px] font-semibold text-white">{initials}</button></form>
         </header>
 
         <main className="mx-auto min-h-[calc(100vh-58px)] max-w-[1600px] px-[14px] pb-[88px] pt-[18px] min-[821px]:px-6 min-[821px]:pb-20 min-[821px]:pt-[22px]">{children}</main>
@@ -106,7 +123,8 @@ export function ApplicationShell({ children, email, role, alertCount }: { childr
       <nav className="fixed inset-x-0 bottom-0 z-40 grid h-[68px] grid-cols-5 border-t border-wolfie-border bg-white min-[821px]:hidden" aria-label="Mobile navigation">
         {items.slice(0, 5).map((item) => {
           const active = isActive(pathname, item.href);
-          return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("grid place-items-center gap-0.5 py-1 text-[9px] font-medium", active ? "text-state-running" : "text-wolfie-muted")}><span className="text-xl leading-[18px]">{item.glyph}</span><span>{item.label}</span></Link>;
+          const Icon = item.icon;
+          return <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn("grid place-items-center gap-0.5 py-1 text-[9px] font-medium", active ? "text-state-running" : "text-wolfie-muted")}><Icon className="size-[19px]" strokeWidth={active ? 2.2 : 1.8} /><span>{item.label}</span></Link>;
         })}
       </nav>
 
