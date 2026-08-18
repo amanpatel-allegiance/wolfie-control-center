@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { COMPANY_ACCESS_COOKIE, normalizeCompanyEmail } from "@/lib/company-access";
 
-const PUBLIC_PATHS = new Set<string>(["/login", "/auth/callback", "/favicon.ico"]);
+const PUBLIC_PATHS = new Set<string>(["/login", "/auth/callback", "/api/access", "/favicon.ico"]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -15,7 +16,9 @@ export async function middleware(request: NextRequest) {
   }
 
   const { response, user } = await updateSession(request);
-  if (!user && !isLocalDashboardPreview() && !pathname.startsWith("/api/")) {
+  const authenticatedEmail = normalizeCompanyEmail(user?.email);
+  const companyEmail = normalizeCompanyEmail(request.cookies.get(COMPANY_ACCESS_COOKIE)?.value);
+  if (!authenticatedEmail && !companyEmail && !isLocalDashboardPreview() && !pathname.startsWith("/api/")) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
@@ -23,6 +26,7 @@ export async function middleware(request: NextRequest) {
     response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
     return redirectResponse;
   }
+  response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
 

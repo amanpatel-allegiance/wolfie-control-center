@@ -1,18 +1,17 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Check, CheckCircle2, CircleX, GitCompareArrows } from "lucide-react";
-import { supabaseServer } from "@/lib/supabase/server";
 import { getCurrentRole, getDatasetSnapshots, getPipelineByKey, getRun, getRunLogs, getRunStages } from "@/lib/data";
 import { processedRows, rejectedRows, runMode } from "@/lib/run-stats";
 import { formatDuration, formatNumber, formatUtc, redactSecrets } from "@/lib/format";
 import { RunStatusBadge } from "@/components/StatusBadge";
 import { ManualRunButton } from "@/components/ManualRunButton";
 import { EmptyState } from "@/components/EmptyState";
-import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { hasDashboardAccess } from "@/lib/dashboard-access";
 
 export const dynamic="force-dynamic";
 export default async function RunDetail({params}:{params:Promise<{id:string}>}){
-  const {id}=await params; const runId=Number(id); if(!Number.isSafeInteger(runId)||runId<=0)notFound(); const sb=await supabaseServer(); const {data}=await sb.auth.getUser(); if(!data.user&&!isLocalDashboardPreview())redirect("/login"); const [run,stages,logs,role]=await Promise.all([getRun(runId),getRunStages(runId),getRunLogs(runId,300),getCurrentRole()]); if(!run)notFound(); const pipeline=run.pipeline_key?await getPipelineByKey(run.pipeline_key):null; const snapshots=pipeline?await getDatasetSnapshots(pipeline.id,2):[]; const canRun=role==="operator"||role==="admin"; const stats=run.stats??{};
+  const {id}=await params; const runId=Number(id); if(!Number.isSafeInteger(runId)||runId<=0)notFound(); if(!(await hasDashboardAccess()))redirect("/login"); const [run,stages,logs,role]=await Promise.all([getRun(runId),getRunStages(runId),getRunLogs(runId,300),getCurrentRole()]); if(!run)notFound(); const pipeline=run.pipeline_key?await getPipelineByKey(run.pipeline_key):null; const snapshots=pipeline?await getDatasetSnapshots(pipeline.id,2):[]; const canRun=role==="operator"||role==="admin"; const stats=run.stats??{};
   const num=(...keys:string[])=>{for(const key of keys){const v=stats[key];if(typeof v==="number"&&Number.isFinite(v))return v;if(typeof v==="string"&&v.trim()&&Number.isFinite(Number(v)))return Number(v)}return null}; const str=(...keys:string[])=>{for(const key of keys){const v=stats[key];if(typeof v==="string"||typeof v==="number")return String(v)}return "—"};
   const summary=[["Discovered",num("rows_discovered","rows_seen","rows_fetched")],["Processed",processedRows(run)],["Inserted",num("rows_inserted","inserted")],["Updated",num("rows_updated","updated")],["Unchanged",num("rows_unchanged","unchanged")],["Rejected",rejectedRows(run)]] as const; const current=snapshots[0],previous=snapshots[1];
   return <section><div className="ref-crumb"><Link href="/runs">Runs</Link> &nbsp;/&nbsp; {run.pipeline_name??run.pipeline_key??"Unmapped"} &nbsp;/&nbsp; run_{run.id}</div><div className="ref-page-head"><div><div className="ref-detail-title"><h1 className={`inline-flex items-center gap-2 capitalize ${run.status.startsWith("succeeded")?"text-state-healthy":run.status==="running"?"text-state-running":"text-state-failed"}`}>{run.status.startsWith("succeeded")?<CheckCircle2 className="size-6"/>:run.status==="failed"?<CircleX className="size-6"/>:null}{run.status.replaceAll("_"," ")}</h1></div><p>{run.trigger} · Commit {run.commit_sha?.slice(0,7)??"—"} · Started {formatUtc(run.started_at)} · Duration {formatDuration(run.duration_s)}</p></div><div className="ref-actions"><Link href="#dataset-comparison" className="ref-btn"><GitCompareArrows/>Compare</Link>{pipeline&&<ManualRunButton pipelineKey={pipeline.key} canRun={canRun} scheduler={pipeline.scheduler} label="Retry run" initialMode={runMode(run)==="full"?"full":"incremental"}/>}</div></div>

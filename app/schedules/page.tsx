@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarCheck2, CircleAlert, Clock3, Hand, TriangleAlert } from "lucide-react";
-import { supabaseServer } from "@/lib/supabase/server";
 import { getPipelineHealth } from "@/lib/data";
 import { PageHeader } from "@/components/PageHeader";
 import { MetricCard } from "@/components/MetricCard";
 import { HealthBadge } from "@/components/StatusBadge";
 import { cronOccurrencesBetween, nextCronOccurrence } from "@/lib/schedule";
 import { formatRelative } from "@/lib/format";
-import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { hasDashboardAccess } from "@/lib/dashboard-access";
 import { SetupGuideButton } from "@/components/SetupGuideButton";
 import { CsvExportButton } from "@/components/CsvExportButton";
 
@@ -35,9 +34,7 @@ function scheduleTimezoneLabel(value: string) {
 }
 
 export default async function SchedulesPage() {
-  const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  if (!data.user && !isLocalDashboardPreview()) redirect("/login");
+  if (!(await hasDashboardAccess())) redirect("/login");
 
   const pipelines = await getPipelineHealth();
   const now = new Date();

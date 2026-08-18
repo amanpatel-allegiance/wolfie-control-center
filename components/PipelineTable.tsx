@@ -28,7 +28,7 @@ export function PipelineTable({ rows, runs, daily, canRun, selected, onSelection
   const toggleAll = () => onSelectionChange((current) => { const next = new Set(current); if (allVisible) visibleRows.forEach((row) => next.delete(row.id)); else visibleRows.forEach((row) => next.add(row.id)); return next; });
   const exportSelected = () => downloadCsv("wolfie-selected-pipelines.csv", ["Pipeline","Key","Source","Emirate","Status","Freshness hours","SLA hours","Schedule"], selectedRows.map((row) => [row.name,row.key,row.source_key,row.jurisdiction,row.health_state,row.freshness_hours,row.freshness_sla_hours,row.schedule_expression]));
   const runSelected = async () => {
-    if (!canRun) { setMessage("Sign in with an operator or admin account to dispatch production runs."); return; }
+    if (!canRun) { setMessage("An operator or admin role is required to dispatch production runs."); return; }
     setRunning(true); setMessage("");
     const results = await Promise.all(selectedRows.map(async (row) => { const response = await fetch(`/api/pipelines/${row.key}/run`, { method: "POST", headers: { "content-type": "application/json", accept: "application/json" }, body: JSON.stringify({ mode: "incremental", note: "Bulk run from pipeline registry" }) }); return response.ok; }));
     const succeeded = results.filter(Boolean).length;

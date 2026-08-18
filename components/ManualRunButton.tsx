@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
 import { CheckCircle2, ChevronDown, LockKeyhole, Play, X, Zap } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -44,7 +43,7 @@ export function ManualRunButton({ pipelineKey, canRun, scheduler, label = "Trigg
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="grid size-9 place-items-center rounded-lg text-wolfie-muted hover:bg-wolfie-soft hover:text-wolfie-ink"><X className="size-4" /></button>
             </div>
             <h3 id="run-dialog-title" className="mt-4 text-xl font-semibold tracking-tight">{canRun ? "Trigger pipeline run" : "Operator access required"}</h3>
-            <p className="mt-1 text-sm leading-6 text-wolfie-muted">{canRun ? <>Run <span className="font-semibold text-wolfie-ink">{pipelineKey}</span> via <code>{scheduler}</code>. This action is rate-limited and audited.</> : <>Production dispatch for <span className="font-semibold text-wolfie-ink">{pipelineKey}</span> is protected. Sign in with an operator or admin account; viewer access remains read-only.</>}</p>
+            <p className="mt-1 text-sm leading-6 text-wolfie-muted">{canRun ? <>Run <span className="font-semibold text-wolfie-ink">{pipelineKey}</span> via <code>{scheduler}</code>. This action is rate-limited and audited.</> : <>Production dispatch for <span className="font-semibold text-wolfie-ink">{pipelineKey}</span> is protected. An administrator must grant your authenticated account an operator or admin role; company dashboard access remains read-only.</>}</p>
 
             {canRun && <><label className="mt-5 block text-xs font-semibold">Run mode</label>
             <div className="mt-2 grid grid-cols-3 gap-2 rounded-xl bg-wolfie-soft p-1">
@@ -60,7 +59,7 @@ export function ManualRunButton({ pipelineKey, canRun, scheduler, label = "Trigg
 
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setOpen(false)} className="secondary-button">Cancel</button>
-              {canRun ? <button type="button" onClick={dispatch} disabled={pending} className="primary-button"><Play className="size-4 fill-current" />{pending ? "Dispatching…" : `Run ${mode}`}</button> : <Link href="/login" className="primary-button">Sign in</Link>}
+              {canRun ? <button type="button" onClick={dispatch} disabled={pending} className="primary-button"><Play className="size-4 fill-current" />{pending ? "Dispatching…" : `Run ${mode}`}</button> : <button type="button" onClick={() => setOpen(false)} className="primary-button">Understood</button>}
             </div>
           </div>
         </div>

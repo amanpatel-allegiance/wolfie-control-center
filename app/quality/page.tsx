@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { CalendarRange, CircleAlert, Database, FileCheck2, GitCompareArrows, SlidersHorizontal } from "lucide-react";
-import { supabaseServer } from "@/lib/supabase/server";
 import { getAllDatasetSnapshots, getPipelineHealth } from "@/lib/data";
 import { PageHeader } from "@/components/PageHeader";
 import { MetricCard } from "@/components/MetricCard";
@@ -8,7 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { QuerySelect } from "@/components/SelectMenu";
 import { QualityTrendChart } from "@/components/QualityTrendChart";
 import { formatNumber, formatRelative } from "@/lib/format";
-import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { hasDashboardAccess } from "@/lib/dashboard-access";
 import { sourceLabel } from "@/lib/source-label";
 
 export const dynamic = "force-dynamic";
@@ -21,9 +20,7 @@ const rangeOptions = [
 ];
 
 export default async function QualityPage({ searchParams }: { searchParams: Promise<{ range?: string; source?: string }> }) {
-  const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  if (!data.user && !isLocalDashboardPreview()) redirect("/login");
+  if (!(await hasDashboardAccess())) redirect("/login");
   const [params, pipelines, snapshots] = await Promise.all([searchParams, getPipelineHealth(), getAllDatasetSnapshots()]);
   const range = rangeOptions.some((option) => option.value === params.range) ? params.range! : "7";
   const pipelineById = new Map(pipelines.map((pipeline) => [pipeline.id, pipeline]));

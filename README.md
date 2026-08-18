@@ -50,9 +50,13 @@ DASHBOARD_ENV=development ALLOW_DEV_SEED=true npm run seed:dev
 npm run alerts:tick    # evaluate alert rules locally
 ```
 
-## Grant yourself operator role
+## Dashboard access and operator roles
 
-Log in once via magic link, then run this in the Supabase SQL editor:
+The entry screen accepts any syntactically valid address ending in exactly `@allegiance.ae` and stores it in a seven-day HTTP-only cookie. No magic link is sent. This is a convenience gate for read-only monitoring and does not verify mailbox ownership.
+
+Supabase Auth, Row Level Security, and `wcc_operators` still protect production mutations. The company-access cookie never grants operator permissions.
+
+To grant an authenticated Supabase account an operator role, run this in the Supabase SQL editor:
 
 ```sql
 INSERT INTO public.wcc_operators (user_id, role) VALUES ('<your-auth-uid>', 'admin');

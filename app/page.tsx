@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Activity, AlertTriangle, CalendarRange, Check, CheckCircle2, CircleAlert, CircleGauge, CircleX, Play, Rows3, X } from "lucide-react";
-import { supabaseServer } from "@/lib/supabase/server";
 import { getAlerts, getOverviewKpis, getPipelineHealth, getRecentRuns, getWorkspaceDailyStats } from "@/lib/data";
 import { changedRows, processedRows } from "@/lib/run-stats";
 import { formatDuration, formatNumber, formatRelative } from "@/lib/format";
@@ -10,7 +9,7 @@ import { MetricCard } from "@/components/MetricCard";
 import { HealthBadge, RunStatusBadge } from "@/components/StatusBadge";
 import { RunSuccessTrend } from "@/components/RunSuccessTrend";
 import { AutoRefreshButton } from "@/components/AutoRefreshButton";
-import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { hasDashboardAccess } from "@/lib/dashboard-access";
 import { compactSourceLabel, sourceLabel } from "@/lib/source-label";
 import { QuerySelect } from "@/components/SelectMenu";
 import { deriveLiveHealthIncidents } from "@/lib/incidents";
@@ -31,7 +30,7 @@ const trendOptions = [
 ];
 
 export default async function OverviewPage({ searchParams }: { searchParams: Promise<{ range?: string; trend?: string }> }) {
-  const sb = await supabaseServer(); const { data } = await sb.auth.getUser(); if (!data.user && !isLocalDashboardPreview()) redirect("/login");
+  if (!(await hasDashboardAccess())) redirect("/login");
   const params = await searchParams;
   const period = periodOptions.some((option) => option.value === params.range) ? params.range! : "24h";
   const selectedTrendDays = [7, 14, 30].includes(Number(params.trend)) ? Number(params.trend) : 14;

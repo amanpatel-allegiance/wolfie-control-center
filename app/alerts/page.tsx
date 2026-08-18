@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Activity, AlarmClock, CircleAlert, Clock3, ExternalLink, Settings2, TriangleAlert } from "lucide-react";
-import { supabaseServer } from "@/lib/supabase/server";
 import { getAlertEvents, getAlertRules, getCurrentRole, getPipelineHealth } from "@/lib/data";
 import { deriveLiveHealthIncidents } from "@/lib/incidents";
 import { PageHeader } from "@/components/PageHeader";
@@ -10,7 +9,7 @@ import { HealthBadge } from "@/components/StatusBadge";
 import { ConfirmAcknowledgeButton } from "@/components/ConfirmAcknowledgeButton";
 import { EmptyState } from "@/components/EmptyState";
 import { formatDuration, formatRelative, formatUtc } from "@/lib/format";
-import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { hasDashboardAccess } from "@/lib/dashboard-access";
 import { ResolveIncidentButton } from "@/components/ResolveIncidentButton";
 import { CsvExportButton } from "@/components/CsvExportButton";
 import type { AlertEvent, PipelineHealthRow } from "@/lib/types";
@@ -33,9 +32,7 @@ const mean = (values: number[]) => values.length ? values.reduce((total, value) 
 const severityRank = { critical: 0, warning: 1, info: 2 } as const;
 
 export default async function IncidentsPage({ searchParams }: { searchParams: Promise<{ incident?: string }> }) {
-  const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  if (!data.user && !isLocalDashboardPreview()) redirect("/login");
+  if (!(await hasDashboardAccess())) redirect("/login");
 
   const [params, events, rules, pipelines, role] = await Promise.all([
     searchParams,
@@ -104,7 +101,7 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
             <div className="ref-incident-actions">
               {selected.event?.status === "open" && canOperate && <ConfirmAcknowledgeButton alertId={selected.event.id}/>}
               {selected.event && canOperate && <ResolveIncidentButton alertId={selected.event.id}/>}
-              {selected.event && !canOperate && <Link href="/login" className="ref-btn">Operator sign-in</Link>}
+              {selected.event && !canOperate && <span className="ref-btn cursor-default">Operator role required</span>}
               {selected.kind === "health" && selected.pipeline && <Link href={`/pipelines/${selected.pipeline.key}`} className="ref-btn ref-btn-primary">Open pipeline<ExternalLink className="size-3.5"/></Link>}
             </div>
           </div>

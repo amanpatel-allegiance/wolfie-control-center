@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ApplicationShell } from "@/components/ApplicationShell";
-import { supabaseServer } from "@/lib/supabase/server";
 import { getAlerts, getCurrentRole, getPipelineHealth } from "@/lib/data";
-import { isLocalDashboardPreview } from "@/lib/local-preview";
 import { deriveLiveHealthIncidents } from "@/lib/incidents";
+import { getDashboardAccessEmail } from "@/lib/dashboard-access";
 
 export const metadata: Metadata = {
   title: "Wolfie Control Center",
@@ -12,10 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  const preview = isLocalDashboardPreview();
-  const email = data.user?.email ?? (preview ? "aman.patel@local.preview" : undefined);
+  const email = await getDashboardAccessEmail();
   const [roleResult, alertsResult, pipelinesResult] = email
     ? await Promise.allSettled([getCurrentRole(), getAlerts("open"), getPipelineHealth()])
     : [null, null, null];

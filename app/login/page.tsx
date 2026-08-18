@@ -1,41 +1,17 @@
-"use client";
-import { useEffect, useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/browser";
-import { Activity, ArrowRight, CheckCircle2, Clock3, LockKeyhole, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Activity, ArrowRight, Clock3, LockKeyhole, ShieldCheck, type LucideIcon } from "lucide-react";
+import { safeDashboardPath } from "@/lib/company-access";
 
 const FEATURES: ReadonlyArray<{ icon: LucideIcon; label: string }> = [
   { icon: Activity, label: "Live run health" },
   { icon: Clock3, label: "Freshness SLA tracking" },
-  { icon: ShieldCheck, label: "Audited refresh controls" },
+  { icon: ShieldCheck, label: "Protected operator controls" },
 ];
 
 function Pulse() { return <svg className="size-[38px] text-[#22C98B]" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M2 26h8l4-13 6 25 6-29 5 18 4-8 4 7h7" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const [msg, setMsg] = useState<string>("");
-
-  useEffect(() => {
-    const error = new URLSearchParams(window.location.search).get("error");
-    if (error) { setState("error"); setMsg(error); }
-  }, []);
-
-  const send = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setState("sending");
-    const sb = supabaseBrowser();
-    const { error } = await sb.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-    if (error) {
-      setState("error");
-      setMsg(error.message);
-    } else {
-      setState("sent");
-    }
-  };
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; next?: string }> }) {
+  const params = await searchParams;
+  const next = safeDashboardPath(params.next);
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-center overflow-auto bg-[#F2F3F5] p-[14px] lg:p-[4vh_5vw]">
@@ -47,24 +23,18 @@ export default function LoginPage() {
         </section>
 
         <section className="flex min-w-0 flex-col justify-center px-7 py-[52px] lg:px-[90px] lg:py-[70px]">
-          <div className="eyebrow !text-[#24D69A]">WELCOME BACK</div>
-          <h2 className="my-2 text-[35px] font-semibold tracking-[-.04em]">Sign in to Wolfie</h2>
-          <p className="leading-[1.55] text-wolfie-muted">Use your work email to receive a secure magic link.</p>
+          <div className="eyebrow !text-[#24D69A]">COMPANY ACCESS</div>
+          <h2 className="my-2 text-[35px] font-semibold tracking-[-.04em]">Open Wolfie</h2>
+          <p className="leading-[1.55] text-wolfie-muted">Enter your Allegiance work email to continue. No magic link is required.</p>
 
-          {state === "sent" ? (
-            <div className="mt-7 rounded-[10px] border border-state-healthy/20 bg-state-healthy/[.06] p-5">
-              <CheckCircle2 className="size-7 text-state-healthy" /><div className="mt-3 font-semibold">Check your inbox</div><p className="mt-1 text-sm leading-6 text-wolfie-muted">We sent a sign-in link to <b className="text-wolfie-ink">{email}</b>.</p>
-              <button type="button" onClick={() => setState("idle")} className="mt-4 text-xs font-semibold text-wolfie-accent hover:underline">Use another email</button>
-            </div>
-          ) : (
-            <form onSubmit={send} className="min-w-0">
-              <label className="mb-[7px] mt-[26px] block text-xs font-bold">Work email</label>
-              <input type="email" required autoFocus autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className="h-12 min-w-0 w-full rounded-lg border border-[#CCD3DC] px-[13px] text-sm outline-none focus:border-wolfie-accent focus:shadow-[0_0_0_3px_rgba(15,159,110,.12)]" />
-              <button type="submit" disabled={state === "sending"} className="ref-btn ref-btn-primary mt-[14px] h-12 w-full">{state === "sending" ? "Sending secure link…" : <>Send magic link <ArrowRight className="size-4" /></>}</button>
-              {state === "error" && <div role="alert" className="rounded-xl bg-state-failed/10 p-3 text-xs text-state-failed">{msg}</div>}
-            </form>
-          )}
-          <div className="mt-[14px] flex items-center gap-1.5 text-[11px] text-wolfie-muted"><LockKeyhole className="size-3.5"/>Secure, passwordless sign-in. Magic link expires in 15 minutes.</div>
+          <form action="/api/access" method="post" className="min-w-0">
+            <input type="hidden" name="next" value={next}/>
+            <label className="mb-[7px] mt-[26px] block text-xs font-bold" htmlFor="company-email">Work email</label>
+            <input id="company-email" name="email" type="email" required autoFocus autoComplete="email" inputMode="email" placeholder="name@allegiance.ae" className="h-12 min-w-0 w-full rounded-lg border border-[#CCD3DC] px-[13px] text-sm outline-none focus:border-wolfie-accent focus:shadow-[0_0_0_3px_rgba(15,159,110,.12)]" />
+            <button type="submit" className="ref-btn ref-btn-primary mt-[14px] h-12 w-full">Continue to dashboard <ArrowRight className="size-4" /></button>
+            {params.error && <div role="alert" className="mt-3 rounded-xl bg-state-failed/10 p-3 text-xs text-state-failed">{params.error}</div>}
+          </form>
+          <div className="mt-[14px] flex items-center gap-1.5 text-[11px] text-wolfie-muted"><LockKeyhole className="size-3.5"/>Exact <strong>@allegiance.ae</strong> addresses only. Control actions remain role protected.</div>
         </section>
       </div>
     </div>

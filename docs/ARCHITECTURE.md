@@ -81,6 +81,11 @@ Implemented identically in SQL (`wcc_v_pipeline_health`) and TS (`lib/health.ts:
 
 ## Security model
 
+- Dashboard viewing uses an exact `@allegiance.ae` domain gate retained in an HTTP-only,
+  SameSite=Lax cookie for seven days. It does not prove mailbox ownership and is not an
+  authorization signal.
+- Production mutation routes still require a valid Supabase Auth user and an explicit operator
+  role. The company-access cookie never grants write permissions.
 - All `wcc_*` tables have RLS enabled.
 - Reads: any authenticated user.
 - Writes to `wcc_pipeline_manual_runs`: `operator` or `admin` only.
