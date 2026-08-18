@@ -16,7 +16,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { data } = await sb.auth.getUser();
   const preview = isLocalDashboardPreview();
   const email = data.user?.email ?? (preview ? "aman.patel@local.preview" : undefined);
-  const [role, openAlerts, pipelines] = email ? await Promise.all([getCurrentRole(), getAlerts("open"), getPipelineHealth()]) : ["viewer" as const, [], []];
+  const [roleResult, alertsResult, pipelinesResult] = email
+    ? await Promise.allSettled([getCurrentRole(), getAlerts("open"), getPipelineHealth()])
+    : [null, null, null];
+  const role = roleResult?.status === "fulfilled" ? roleResult.value : "viewer";
+  const openAlerts = alertsResult?.status === "fulfilled" ? alertsResult.value : [];
+  const pipelines = pipelinesResult?.status === "fulfilled" ? pipelinesResult.value : [];
   const incidentCount = openAlerts.length + deriveLiveHealthIncidents(pipelines, openAlerts).length;
 
   return (

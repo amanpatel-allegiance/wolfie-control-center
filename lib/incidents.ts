@@ -15,7 +15,8 @@ function thresholdCrossedAt(pipeline: PipelineHealthRow) {
   if (pipeline.health_state === "failed") return pipeline.last_failure_started_at ?? pipeline.latest_started_at;
   if (pipeline.health_state === "stuck") return pipeline.latest_heartbeat_at ?? pipeline.latest_started_at;
   if (pipeline.health_state === "stale" && pipeline.last_success_finished_at) {
-    return new Date(new Date(pipeline.last_success_finished_at).getTime() + pipeline.freshness_sla_hours * 3_600_000).toISOString();
+    const threshold = new Date(pipeline.last_success_finished_at).getTime() + pipeline.freshness_sla_hours * 3_600_000;
+    if (Number.isFinite(threshold)) return new Date(threshold).toISOString();
   }
   return pipeline.latest_finished_at ?? pipeline.latest_started_at ?? pipeline.last_success_finished_at;
 }

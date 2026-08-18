@@ -39,8 +39,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams: Pr
 
   const [params, events, rules, pipelines, role] = await Promise.all([
     searchParams,
-    getAlertEvents(),
-    getAlertRules(),
+    getAlertEvents().catch(() => []),
+    getAlertRules().catch(() => []),
     getPipelineHealth(),
     getCurrentRole(),
   ]);

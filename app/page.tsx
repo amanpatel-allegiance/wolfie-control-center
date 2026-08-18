@@ -37,7 +37,7 @@ export default async function OverviewPage({ searchParams }: { searchParams: Pro
   const selectedTrendDays = [7, 14, 30].includes(Number(params.trend)) ? Number(params.trend) : 14;
   const periodDays = period === "7d" ? 7 : period === "30d" ? 30 : 1;
   const periodLabel = period === "24h" ? "last 24h" : `last ${periodDays} days`;
-  const [kpis, pipelines, runs, alerts, daily] = await Promise.all([getOverviewKpis(), getPipelineHealth(), getRecentRuns({ limit: 500 }), getAlerts("open"), getWorkspaceDailyStats(30)]);
+  const [kpis, pipelines, runs, alerts, daily] = await Promise.all([getOverviewKpis(), getPipelineHealth(), getRecentRuns({ limit: 500 }), getAlerts("open").catch(() => []), getWorkspaceDailyStats(30)]);
   const periodStart = Date.now() - periodDays * 86_400_000; const periodRuns = runs.filter((r) => new Date(r.started_at).getTime() >= periodStart); const completedPeriod = periodRuns.filter((r) => !["queued","running","scheduled"].includes(r.status)); const failedPeriod = completedPeriod.filter((r) => !good.has(r.status)); const rowsProcessed = periodRuns.reduce((sum,r) => sum + (processedRows(r) ?? 0), 0);
   const trendDays = new Set(daily.map((row) => row.day));
   const runTrend = new Map<string, { pipeline_id: number; day: string; succeeded: number; partial: number; failed: number; total: number; avg_duration_s: number | null; rows_written: number; durationTotal: number; durationCount: number }>();
