@@ -2,29 +2,29 @@ import { cn } from "@/lib/cn";
 import type { HealthState, RunStatus } from "@/lib/types";
 
 const HEALTH_STYLES: Record<HealthState, string> = {
-  healthy:  "bg-state-healthy/12 text-state-healthy",
-  running:  "bg-state-running/12 text-state-running",
-  warning:  "bg-state-warning/12 text-state-warning",
-  delayed:  "bg-state-warning/12 text-state-warning",
-  stale:    "bg-state-stale/12 text-state-stale",
-  failed:   "bg-state-failed/12 text-state-failed",
-  stuck:    "bg-state-stuck/12 text-state-stuck",
-  disabled: "bg-state-disabled/12 text-state-disabled",
-  unknown:  "bg-state-unknown/12 text-state-unknown",
+  healthy:  "bg-[#E9F8F1] text-[#087950]",
+  running:  "bg-[#EDF4FF] text-[#1D5CCC]",
+  warning:  "bg-[#FFF6E5] text-[#A55C00]",
+  delayed:  "bg-[#FFF6E5] text-[#A55C00]",
+  stale:    "bg-[#FFF6E5] text-[#A55C00]",
+  failed:   "bg-[#FFF0F0] text-[#C92E2E]",
+  stuck:    "bg-[#FFF0F0] text-[#C92E2E]",
+  disabled: "bg-[#F2F4F7] text-[#667085]",
+  unknown:  "bg-[#F2F4F7] text-[#667085]",
 };
 
 const RUN_STYLES: Partial<Record<RunStatus, string>> = {
-  scheduled:                "bg-wolfie-soft text-wolfie-muted ring-wolfie-border",
-  queued:                   "bg-state-running/12 text-state-running ring-state-running/30",
-  running:                  "bg-state-running/12 text-state-running ring-state-running/30",
-  succeeded:                "bg-state-healthy/12 text-state-healthy ring-state-healthy/30",
-  succeeded_with_warnings:  "bg-state-warning/12 text-state-warning ring-state-warning/30",
-  partial:                  "bg-state-warning/12 text-state-warning ring-state-warning/30",
-  unchanged:                "bg-state-healthy/12 text-state-healthy ring-state-healthy/30",
-  failed:                   "bg-state-failed/12  text-state-failed  ring-state-failed/30",
-  timed_out:                "bg-state-failed/12  text-state-failed  ring-state-failed/30",
-  cancelled:                "bg-state-disabled/12 text-state-disabled ring-state-disabled/30",
-  skipped:                  "bg-state-disabled/12 text-state-disabled ring-state-disabled/30",
+  scheduled:                "bg-[#F2F4F7] text-[#667085]",
+  queued:                   "bg-[#EDF4FF] text-[#1D5CCC]",
+  running:                  "bg-[#EDF4FF] text-[#1D5CCC]",
+  succeeded:                "bg-[#E9F8F1] text-[#087950]",
+  succeeded_with_warnings:  "bg-[#FFF6E5] text-[#A55C00]",
+  partial:                  "bg-[#FFF6E5] text-[#A55C00]",
+  unchanged:                "bg-[#E9F8F1] text-[#087950]",
+  failed:                   "bg-[#FFF0F0] text-[#C92E2E]",
+  timed_out:                "bg-[#FFF0F0] text-[#C92E2E]",
+  cancelled:                "bg-[#F2F4F7] text-[#667085]",
+  skipped:                  "bg-[#F2F4F7] text-[#667085]",
 };
 
 export function HealthBadge({ state, size = "sm" }: { state: HealthState; size?: "xs" | "sm" }) {

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import type { DailyStats, PipelineHealthRow, Run } from "@/lib/types";
 import { PipelineTable } from "@/components/PipelineTable";
+import { sourceLabel } from "@/lib/source-label";
 
 export function PipelineExplorer({ rows, runs, daily, initialQuery = "", initialState = "all", initialSource = "all" }: { rows: PipelineHealthRow[]; runs: Run[]; daily: DailyStats[]; initialQuery?: string; initialState?: string; initialSource?: string }) {
   const [query, setQuery] = useState(initialQuery);
@@ -34,7 +35,7 @@ export function PipelineExplorer({ rows, runs, daily, initialQuery = "", initial
           <label className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-wolfie-muted"/><input value={query} onChange={(event) => setQuery(event.target.value)} className="ref-field ref-search-field pl-9" placeholder="Search pipelines" /></label>
             <select value={source} onChange={(event) => setSource(event.target.value)} className="ref-field">
               <option value="all">All sources</option>
-              {sources.map((item) => <option key={item} value={item}>{item}</option>)}
+              {sources.map((item) => <option key={item} value={item}>{sourceLabel(item)}</option>)}
             </select>
             <select value={jurisdiction} onChange={(event) => setJurisdiction(event.target.value)} className="ref-field"><option value="all">All emirates</option>{jurisdictions.map((item) => <option key={item} value={item}>{item}</option>)}</select>
             <select value={state} onChange={(event) => setState(event.target.value)} className="ref-field"><option value="all">Any status</option>{["healthy","running","warning","stale","failed","stuck"].map((item) => <option key={item} value={item}>{item}</option>)}</select>

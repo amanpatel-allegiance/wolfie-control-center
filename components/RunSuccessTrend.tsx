@@ -1,5 +1,24 @@
 import type { DailyStats } from "@/lib/types";
 
+function smoothPath(points: ReadonlyArray<readonly [number, number]>): string {
+  if (!points.length) return "";
+  if (points.length === 1) return `M${points[0][0]} ${points[0][1]}`;
+
+  let path = `M${points[0][0].toFixed(1)} ${points[0][1].toFixed(1)}`;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const previous = points[Math.max(0, index - 1)];
+    const current = points[index];
+    const next = points[index + 1];
+    const following = points[Math.min(points.length - 1, index + 2)];
+    const firstControlX = current[0] + (next[0] - previous[0]) / 6;
+    const firstControlY = current[1] + (next[1] - previous[1]) / 6;
+    const secondControlX = next[0] - (following[0] - current[0]) / 6;
+    const secondControlY = next[1] - (following[1] - current[1]) / 6;
+    path += ` C${firstControlX.toFixed(1)} ${firstControlY.toFixed(1)} ${secondControlX.toFixed(1)} ${secondControlY.toFixed(1)} ${next[0].toFixed(1)} ${next[1].toFixed(1)}`;
+  }
+  return path;
+}
+
 export function RunSuccessTrend({ rows }: { rows: DailyStats[] }) {
   const byDay = new Map<string, { day: string; succeeded: number; total: number }>();
   for (const row of rows) {
@@ -22,9 +41,10 @@ export function RunSuccessTrend({ rows }: { rows: DailyStats[] }) {
   const x = (index: number) => data.length === 1 ? width / 2 : index * (width / (data.length - 1));
   const y = (rate: number) => bottom - (Math.max(0, Math.min(100, rate)) / 100) * (bottom - top);
   const points = data.map((item, index) => [x(index), y(item.rate)] as const);
-  const line = points.map(([px, py], index) => `${index ? "L" : "M"}${px.toFixed(1)} ${py.toFixed(1)}`).join(" ");
+  const line = smoothPath(points);
   const area = data.length > 1 ? `${line} L${width} ${bottom} L0 ${bottom} Z` : "";
   const current = data[data.length - 1];
+  const currentPoint = points[points.length - 1];
 
   return (
     <div className="p-[14px]">
@@ -33,7 +53,7 @@ export function RunSuccessTrend({ rows }: { rows: DailyStats[] }) {
         <g stroke="#E6E9ED" strokeWidth="1">{[18, 58.5, 99, 139.5, 180].map((gy) => <path key={gy} d={`M0 ${gy}H${width}`} />)}</g>
         {area && <path d={area} fill="url(#successFill)" />}
         {data.length > 1 && <path d={line} fill="none" stroke="#0F9F6E" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
-        {points.map(([px, py], index) => <circle key={data[index].day} cx={px} cy={py} r={index === points.length - 1 ? 5 : 3} fill={index === points.length - 1 && data[index].rate < 90 ? "#E43D3D" : "#0F9F6E"} stroke="#fff" strokeWidth="2"><title>{`${data[index].day}: ${data[index].rate}% success`}</title></circle>)}
+        <circle cx={currentPoint[0]} cy={currentPoint[1]} r="5" fill={current.rate < 90 ? "#E43D3D" : "#0F9F6E"} stroke="#fff" strokeWidth="2"><title>{`${current.day}: ${current.rate}% success`}</title></circle>
       </svg>
       <div className="flex justify-between text-[11px] text-wolfie-muted"><span>{data[0].day}</span><b className={current.rate < 90 ? "text-state-failed" : "text-state-healthy"}>{current.rate}% current</b></div>
     </div>
