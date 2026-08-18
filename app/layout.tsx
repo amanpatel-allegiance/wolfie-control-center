@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ApplicationShell } from "@/components/ApplicationShell";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getAlerts, getCurrentRole } from "@/lib/data";
+import { getAlerts, getCurrentRole, getPipelineHealth } from "@/lib/data";
 import { isLocalDashboardPreview } from "@/lib/local-preview";
+import { deriveLiveHealthIncidents } from "@/lib/incidents";
 
 export const metadata: Metadata = {
   title: "Wolfie Control Center",
@@ -15,12 +16,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const { data } = await sb.auth.getUser();
   const preview = isLocalDashboardPreview();
   const email = data.user?.email ?? (preview ? "aman.patel@local.preview" : undefined);
-  const [role, openAlerts] = email ? await Promise.all([getCurrentRole(), getAlerts("open")]) : ["viewer" as const, []];
+  const [role, openAlerts, pipelines] = email ? await Promise.all([getCurrentRole(), getAlerts("open"), getPipelineHealth()]) : ["viewer" as const, [], []];
+  const incidentCount = openAlerts.length + deriveLiveHealthIncidents(pipelines, openAlerts).length;
 
   return (
     <html lang="en">
       <body className="min-h-screen">
-        {email ? <ApplicationShell email={email} role={role} alertCount={openAlerts.length}>{children}</ApplicationShell> : <main className="min-h-screen">{children}</main>}
+        {email ? <ApplicationShell email={email} role={role} alertCount={incidentCount}>{children}</ApplicationShell> : <main className="min-h-screen">{children}</main>}
       </body>
     </html>
   );

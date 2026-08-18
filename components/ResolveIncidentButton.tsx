@@ -13,7 +13,7 @@ export function ResolveIncidentButton({ alertId }: { alertId: number }) {
     const response = await fetch(`/api/alerts/${alertId}/resolve`, { method: "POST", headers: { accept: "application/json" } });
     const result = await response.json().catch(() => ({}));
     setPending(false);
-    if (response.ok) router.replace("/alerts"); else window.alert(result.message ?? "The incident could not be resolved.");
+    if (response.ok) router.replace("/incidents"); else window.alert(result.message ?? "The incident could not be resolved.");
   };
   return <button type="button" className="ref-btn" disabled={pending} onClick={resolve}><CheckCircle2/>{pending ? "Resolving…" : "Resolve"}</button>;
 }

@@ -15,5 +15,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (error) return NextResponse.json({ ok: false, message: "resolution failed" }, { status: 500 });
   if (!data) return NextResponse.json({ ok: false, message: "incident is already resolved or unavailable" }, { status: 409 });
   if (request.headers.get("accept")?.includes("application/json")) return NextResponse.json({ ok: true });
-  return NextResponse.redirect(new URL("/alerts", request.url), { status: 303 });
+  return NextResponse.redirect(new URL("/incidents", request.url), { status: 303 });
 }

@@ -13,14 +13,17 @@ export function formatRelative(iso: string | null | undefined, now = new Date())
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return "—";
   const diffMs = now.getTime() - then;
-  const s = Math.round(diffMs / 1000);
-  if (s < 60) return `${s}s ago`;
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  const future = diffMs < 0;
+  const s = Math.abs(Math.round(diffMs / 1000));
+  const relative = (value: string) => future ? `in ${value}` : `${value} ago`;
+  if (s < 10) return "just now";
+  if (s < 60) return relative(`${s}s`);
+  if (s < 3600) return relative(`${Math.floor(s / 60)}m`);
+  if (s < 86400) return relative(`${Math.floor(s / 3600)}h`);
   const days = Math.floor(s / 86400);
-  if (days < 30) return `${days}d ago`;
+  if (days < 30) return relative(`${days}d`);
   const months = Math.floor(days / 30);
-  return `${months}mo ago`;
+  return relative(`${months}mo`);
 }
 
 export function formatNumber(n: number | null | undefined): string {

@@ -20,5 +20,5 @@ export async function POST(request: Request, ctx: { params: Promise<{ id: string
     .eq("status", "open");
   if (error) return NextResponse.json({ ok: false, message: "acknowledgement failed" }, { status: 500 });
   if (request.headers.get("accept")?.includes("application/json")) return NextResponse.json({ ok: true });
-  return NextResponse.redirect(new URL("/alerts", request.url), { status: 303 });
+  return NextResponse.redirect(new URL("/incidents", request.url), { status: 303 });
 }
