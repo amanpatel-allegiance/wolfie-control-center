@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import type { ReactNode } from "react";
 import { Activity, AlertTriangle, CheckCircle2, CircleGauge, Clock3, XCircle } from "lucide-react";
 
 type Props = {
@@ -6,6 +7,7 @@ type Props = {
   value: string | number;
   hint?: string;
   tone?: "default" | "healthy" | "warning" | "failed" | "running" | "stale";
+  icon?: ReactNode;
 };
 
 const TONE = {
@@ -17,14 +19,14 @@ const TONE = {
   stale:   { text: "text-state-warning", bg: "bg-state-warning/10", iconText: "text-state-warning", icon: Clock3 },
 };
 
-export function MetricCard({ label, value, hint, tone = "default" }: Props) {
+export function MetricCard({ label, value, hint, tone = "default", icon }: Props) {
   const style = TONE[tone];
   const Icon = style.icon;
   return (
     <div className="surface min-h-[105px] p-[15px]">
       <div className="flex items-center gap-[10px] text-xs text-[#344054]">
         <span className={cn("grid size-[34px] place-items-center rounded-full", style.bg)}>
-          <Icon className={cn("size-4", style.iconText)} />
+          {icon ?? <Icon className={cn("size-4", style.iconText)} />}
         </span>
         <span>{label}</span>
       </div>

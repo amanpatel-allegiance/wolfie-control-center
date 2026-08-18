@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { isLocalDashboardPreview } from "@/lib/local-preview";
 
 const PUBLIC_PATHS = new Set<string>(["/login", "/auth/callback", "/favicon.ico"]);
 
@@ -14,7 +15,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const { response, user } = await updateSession(request);
-  if (!user && !pathname.startsWith("/api/")) {
+  if (!user && !isLocalDashboardPreview() && !pathname.startsWith("/api/")) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);

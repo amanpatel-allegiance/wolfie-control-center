@@ -10,13 +10,14 @@ import { HealthBadge, RunStatusBadge } from "@/components/StatusBadge";
 import { ManualRunButton } from "@/components/ManualRunButton";
 import { ReferenceVolumeChart } from "@/components/ReferenceVolumeChart";
 import { EmptyState } from "@/components/EmptyState";
+import { isLocalDashboardPreview } from "@/lib/local-preview";
 
 export const dynamic = "force-dynamic";
 const tabs = ["overview","runs","quality","configuration","audit"] as const;
 const good = new Set(["succeeded","succeeded_with_warnings","unchanged"]);
 
 export default async function PipelineDetail({ params, searchParams }: { params:Promise<{key:string}>; searchParams:Promise<{tab?:string}> }) {
-  const [{key},query] = await Promise.all([params,searchParams]); const sb=await supabaseServer(); const {data}=await sb.auth.getUser(); if(!data.user) redirect("/login"); const p=await getPipelineByKey(key); if(!p) notFound(); const tab=tabs.includes(query.tab as typeof tabs[number])?query.tab!:"overview";
+  const [{key},query] = await Promise.all([params,searchParams]); const sb=await supabaseServer(); const {data}=await sb.auth.getUser(); if(!data.user&&!isLocalDashboardPreview()) redirect("/login"); const p=await getPipelineByKey(key); if(!p) notFound(); const tab=tabs.includes(query.tab as typeof tabs[number])?query.tab!:"overview";
   const [role,runs,daily,snapshots,manual,scheduleAudit]=await Promise.all([getCurrentRole(),getRecentRuns({pipelineKey:key,limit:100}),getDailyStats(p.id,30),getDatasetSnapshots(p.id,50),getPipelineManualRuns(p.id),getPipelineScheduleAudit(p.id)]); const latest=runs[0]; const stages=latest?await getRunStages(latest.id):[]; const ok=runs.filter((r)=>good.has(r.status)).length; const rate=runs.length?Math.round(ok/runs.length*1000)/10:null; const durations=runs.map((r)=>r.duration_s).filter((value):value is number=>value!=null).sort((a,b)=>a-b); const median=durations.length?durations[Math.floor(durations.length/2)]:null; const canRun=role==="operator"||role==="admin";
   const latestStats=latest?.stats??{}; const stat=(...keys:string[])=>{for(const k of keys){const v=latestStats[k];if(typeof v==="string"||typeof v==="number")return String(v)}return "—"};
   return <section>

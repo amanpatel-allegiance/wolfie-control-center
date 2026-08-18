@@ -3,6 +3,7 @@ import "./globals.css";
 import { ApplicationShell } from "@/components/ApplicationShell";
 import { supabaseServer } from "@/lib/supabase/server";
 import { getAlerts, getCurrentRole } from "@/lib/data";
+import { isLocalDashboardPreview } from "@/lib/local-preview";
 
 export const metadata: Metadata = {
   title: "Wolfie Control Center",
@@ -12,7 +13,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const sb = await supabaseServer();
   const { data } = await sb.auth.getUser();
-  const email = data.user?.email;
+  const preview = isLocalDashboardPreview();
+  const email = data.user?.email ?? (preview ? "aman.patel@local.preview" : undefined);
   const [role, openAlerts] = email ? await Promise.all([getCurrentRole(), getAlerts("open")]) : ["viewer" as const, []];
 
   return (
